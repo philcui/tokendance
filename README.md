@@ -44,12 +44,34 @@ There are several good token trackers now. Three things here are the reason this
 
 ## Install
 
-Download the zip from the release page, unzip, drag `TokenDance.app` to Applications.
+Open the `.dmg` from the release page and drag `TokenDance.app` into Applications. (The release
+page also has a `.zip`; that one is what the in-app updater fetches.)
 
-The build is **ad-hoc signed, not notarised**, so the first launch is blocked by Gatekeeper:
-right-click the app → *Open* → *Open* again, or run
-`xattr -dr com.apple.quarantine /Applications/TokenDance.app`.
-You only need to do this once.
+### If macOS refuses to open it
+
+This build is **signed ad-hoc, not notarised**: it carries a signature, but not one Apple can trace
+back to a developer. macOS therefore blocks the first launch — and it does so for **anything a
+browser downloaded**, which sets the `com.apple.quarantine` flag on the file. The flag, not the
+signature, is what triggers the check; the same binary runs fine without it.
+
+Two ways past it, both verified on a real download:
+
+```bash
+# ① already dragged it into Applications — drop the "came from the internet" flag
+xattr -dr com.apple.quarantine /Applications/TokenDance.app
+
+# ② or fetch it from the command line instead, which never sets the flag at all
+curl -fLO https://fanshitou.cn/tokendance/download/TokenDance-<version>.dmg
+```
+
+Right-click → *Open* also works on macOS 14 and earlier; on macOS 15 and later Apple removed that
+shortcut and the equivalent is System Settings → Privacy & Security → *Open Anyway*, right after a
+blocked attempt.
+
+Worth knowing: **Homebrew does not help here.** A cask install sets the same quarantine flag on
+what it unpacks (`com.apple.quarantine: …;Homebrew Cask;…`), so `brew install --cask` lands you at
+the same dialog. Only a Developer ID signature plus notarisation removes it, and that is the one
+thing this project does not have.
 
 ## Screenshots
 
