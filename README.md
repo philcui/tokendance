@@ -52,6 +52,11 @@ no cargo, no node, no runtime to install on the target machine.
 This is the part people want to check, so here it is explicitly. With the default settings the
 client talks to `https://fanshitou.cn/tokendance` and nowhere else:
 
+No CDN, no fonts, no analytics snippet: the one third-party library the dashboard needs (chart.js
+4.4.3, MIT) is vendored in `vendor/` and served by the local server as `/vendor/chart.umd.min.js`.
+`scripts/privacy_check.sh` and `tools/dash/verify.mjs` both fail the build if any page ever starts
+referencing an outside script again.
+
 | When | Request | Carries |
 |---|---|---|
 | every 6 hours (on by default, one menu item turns it off) | `POST /api/ping` | a random install id (`u-` + 8 hex), app version, OS name and version, CPU architecture, UI language / theme, uptime in seconds |

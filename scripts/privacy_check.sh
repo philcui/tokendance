@@ -28,7 +28,15 @@ for pat in "115\.29\.196\.[0-9]+" "\.ssh/" "fanshitou_ecs" "ADMIN_TOKEN=[0-9a-f]
 done
 [ "$bad" = 0 ] && echo "  ✓ 干净（家目录路径只允许占位符，服务器/密钥痕迹一处没有）"
 
-echo "==> ② 远端地址集中在一处（应该只有 ServiceConfig.swift.in 与 README）"
+# d) 页面不许引外链脚本/样式。仪表盘曾经从 cdn.jsdelivr.net 拉 chart.js：那等于每次
+#    打开都把用户 IP 送给第三方，还让别人的代码进了能读整个本地库的页面。要加库就
+#    放进 vendor/（见 vendor/README.md），不要退回 CDN。
+hits="$(grep -rnE --include='*.html' --exclude-dir=.git --exclude-dir=build \
+        '(<script|<link)[^>]*(src|href)="https?://' . 2>/dev/null || true)"
+if [ -n "$hits" ]; then echo "  ✗ 页面引用了外部资源（应改成 /vendor/…）"; echo "$hits" | head -5 | sed 's/^/      /'; bad=1; fi
+[ -n "$hits" ] || echo "  ✓ 四个页面没有任何外链脚本/样式（只有本机 + 你的域名）"
+
+echo "==> ② 远端地址集中在一处（应该只有 ServiceConfig.swift.in 与 README；vendor/ 里的许可注释不算）"
 grep -rln "https://" --exclude-dir=.git --exclude-dir=target --exclude-dir=build . \
   | sed 's/^/      /'
 

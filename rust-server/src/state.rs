@@ -34,6 +34,10 @@ pub(crate) struct AppState {
     pub(crate) settings_html: Vec<u8>,
     pub(crate) about_html: Vec<u8>,
     pub(crate) sources_html: Vec<u8>,
+    /// Vendored third-party assets served under `/vendor/…`. Kept in memory
+    /// like the pages above: they are small, read once, and the dashboard needs
+    /// one of them on every load.
+    pub(crate) assets: HashMap<String, Vec<u8>>,
     // shared UI preferences (lang / theme) — single source of truth for web + app
     pub(crate) prefs: Mutex<Value>,
     pub(crate) store: Arc<Store>,

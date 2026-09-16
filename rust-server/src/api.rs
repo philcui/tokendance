@@ -294,6 +294,23 @@ pub(crate) async fn sources_page(State(sh): State<Shared>) -> impl IntoResponse 
     ([(header::CONTENT_TYPE, "text/html; charset=utf-8")], sh.0.sources_html.clone())
 }
 
+/// Vendored chart.js, served from this process instead of a CDN (see
+/// `vendor/README.md`). The dashboard used to pull it from cdn.jsdelivr.net:
+/// that leaked the user's IP on every dashboard open and gave a third party's
+/// script a seat inside a page that can read the whole local token store — and
+/// it broke the charts offline or wherever the CDN is unreachable.
+///
+/// A missing asset answers 404 with a sentence rather than 200 with an empty
+/// body, so a bad build shows up as an error instead of as silent blank charts.
+pub(crate) async fn vendor_chart_js(State(sh): State<Shared>) -> axum::response::Response {
+    let bytes = sh.0.assets.get("vendor/chart.umd.min.js").cloned().unwrap_or_default();
+    if bytes.is_empty() {
+        return (StatusCode::NOT_FOUND, "chart.umd.min.js missing from this build").into_response();
+    }
+    ([(header::CONTENT_TYPE, "application/javascript; charset=utf-8"),
+      (header::CACHE_CONTROL, "public, max-age=86400")], bytes).into_response()
+}
+
 pub(crate) async fn api_stream(State(sh): State<Shared>) -> Sse<impl tokio_stream::Stream<Item = Result<Event, std::convert::Infallible>>> {
     let mut rx = sh.0.tx.subscribe();
     let (tx_out, rx_out) = tokio::sync::mpsc::channel::<Result<Event, std::convert::Infallible>>(16);

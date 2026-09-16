@@ -216,6 +216,30 @@ async fn main() {
     let about_html = read_page("about.html");
     let sources_html = read_page("sources.html");
 
+    // Third-party assets the pages need (`vendor/chart.umd.min.js`), read once
+    // at startup like the pages above. Same three-step resolution, except that
+    // a missing asset resolves to *nothing* — the route then answers 404
+    // instead of handing a browser an HTML placeholder where JS was expected.
+    fn read_asset(rel: &str) -> Vec<u8> {
+        let home = std::env::var("HOME").unwrap_or_default();
+        std::fs::read(Path::new(&home).join(format!(".tokendance/{rel}")))
+            .or_else(|_| std::fs::read(rel))
+            .or_else(|_| {
+                std::fs::read(format!("/Applications/TokenDance.app/Contents/Resources/{rel}"))
+            })
+            .unwrap_or_default()
+    }
+    // An explicit list, never a path built from the request URL: the route takes
+    // no name parameter, so there is nothing to walk out of the directory with.
+    const ASSETS: [&str; 1] = ["chart.umd.min.js"];
+    let assets: HashMap<String, Vec<u8>> = ASSETS
+        .iter()
+        .map(|n| (format!("vendor/{n}"), read_asset(&format!("vendor/{n}"))))
+        .collect();
+    if assets.values().any(|v| v.is_empty()) {
+        eprintln!("WARNING: a vendored asset is missing from this build (see vendor/README.md)");
+    }
+
     // prefs: stored once, consumed by both UIs
     let prefs: Value = store
         .load_kv("prefs")
@@ -239,6 +263,7 @@ async fn main() {
         settings_html,
         about_html,
         sources_html,
+        assets,
         prefs: Mutex::new(prefs),
         store: store.clone(),
     });
@@ -370,6 +395,7 @@ async fn main() {
         .route("/settings", get(settings_page))
         .route("/about", get(about_page))
         .route("/sources", get(sources_page))
+        .route("/vendor/chart.umd.min.js", get(vendor_chart_js))
         .route("/", get(index))
         .fallback(not_found)
         .with_state(sh);

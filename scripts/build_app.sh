@@ -56,6 +56,10 @@ cp settings.html "$APP/Contents/Resources/settings.html"
 cp about.html "$APP/Contents/Resources/about.html"
 cp sources.html "$APP/Contents/Resources/sources.html"
 cp Assets/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
+# Vendored third-party assets, served by the server at /vendor/… (see
+# vendor/README.md). Bundling them is what keeps the dashboard off a CDN.
+mkdir -p "$APP/Contents/Resources/vendor"
+cp vendor/*.js "$APP/Contents/Resources/vendor/"
 
 # The app is only a client: every number it shows comes from the local server,
 # and it starts that server itself when 127.0.0.1:8737 is not answering. Shipping

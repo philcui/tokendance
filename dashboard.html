@@ -6,7 +6,10 @@
 <title>TokenDance · Token 用量仪表盘</title>
 <!-- inline so there is no /favicon.ico round-trip: the four pages used to 404 on it -->
 <link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+PGNpcmNsZSBjeD0iMTYiIGN5PSIxNiIgcj0iMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzNiODJmNiIgc3Ryb2tlLXdpZHRoPSI3Ii8+PC9zdmc+">
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<!-- Vendored, not a CDN: served by the local server from vendor/chart.umd.min.js
+     (chart.js 4.4.3, MIT). A CDN here would leak the user's IP on every dashboard
+     open and put a third party's script inside a page that can read all the data. -->
+<script src="/vendor/chart.umd.min.js"></script>
 <style>
 :root{
   --bg:#f5f6f8; --card:#fff; --card-2:#fafbfc; --border:#e5e7eb; --text:#1f2937; --muted:#6b7280;
