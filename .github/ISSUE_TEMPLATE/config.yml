@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Privacy, network behaviour, and what is sent
+    url: https://github.com/philcui/tokendance#network-behaviour
+    about: The complete list of outbound requests, and how to point them at your own service.

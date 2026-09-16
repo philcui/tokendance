@@ -1,0 +1,67 @@
+name: Add a data source
+description: An agent or tool that TokenDance is not counting yet.
+labels: [data-source]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Before you write anything, try this:** open the dashboard → 设置 → 重新扫描数据源
+        (Settings → Rescan sources). The scanner looks in the standard locations, searches for the
+        tool by name, and then scans for content that parses. If the tool keeps usage on disk in a
+        readable form, it is often picked up automatically — no code change needed.
+
+        If it still does not show up, the two things below are what make it possible to add. The
+        *path* matters most; a couple of lines of the real file (with anything personal removed) is
+        the second most useful thing and usually decides it in one round trip.
+
+  - type: input
+    id: name
+    attributes:
+      label: Tool name
+      placeholder: "Goose"
+    validations:
+      required: true
+
+  - type: input
+    id: where
+    attributes:
+      label: Where does it keep its data on disk?
+      description: The directory or file. On macOS this is almost always somewhere under ~ or ~/Library.
+      placeholder: "~/.local/state/goose/logs/"
+    validations:
+      required: true
+
+  - type: textarea
+    id: sample
+    attributes:
+      label: What does a usage record look like?
+      description: |
+        Two or three lines, or one row of a SQLite table, with the token counts. **Redact** prompts,
+        responses, file paths and anything personal — only the keys and the numbers matter.
+      render: json
+      placeholder: |
+        {"type":"assistant","usage":{"input_tokens":1024,"output_tokens":87,"cache_read_input_tokens":900}}
+    validations:
+      required: true
+
+  - type: dropdown
+    id: format
+    attributes:
+      label: What kind of file is it?
+      options:
+        - JSONL (one JSON object per line)
+        - JSON
+        - SQLite database
+        - Something else / not sure
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before posting
+      options:
+        - label: I ran 设置 → 重新扫描数据源 and it still did not appear
+          required: true
+        - label: I removed prompts, responses and personal paths from the sample above
+          required: true

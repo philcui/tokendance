@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    # The app is macOS-only and the parser tests assert on macOS-shaped paths and
+    # on `$HOME`, so the tests run where the product does.
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            rust-server/target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('rust-server/Cargo.lock') }}
+
+      - name: Test the local server
+        working-directory: rust-server
+        run: cargo test --release
+
+      # build_app.sh compiles the Swift app *and* the Rust server and bundles
+      # both, so a green build here means what users download can be produced
+      # from this commit with no extra steps.
+      - name: Build TokenDance.app
+        run: ./scripts/build_app.sh
+
+      # Fails on this machine's home path, on server/credential shapes, and on
+      # any page that references an outside script or stylesheet. Two of those
+      # were real bugs (a CDN and a committed .cargo override), so it is a gate,
+      # not a report.
+      - name: Privacy / self-containment check
+        run: ./scripts/privacy_check.sh
+
+      - name: Upload the app bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: TokenDance.app
+          path: build/TokenDance.app
+          if-no-files-found: error

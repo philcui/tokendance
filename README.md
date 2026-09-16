@@ -1,30 +1,46 @@
 # TokenDance
 
+**A macOS menu-bar HUD for the token your AI coding agents burn** — Codex, Claude Code, and
+whatever else you have installed. It watches the transcripts already on your disk, so the number
+is live: today's total, the current burn rate, the cache hit rate, and which agent is doing it.
+
+Everything is parsed and stored locally. No account, no login, no keys.
+
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+![Platform: macOS 13+](https://img.shields.io/badge/platform-macOS%2013%2B-lightgrey.svg)
+![Local only](https://img.shields.io/badge/network-local--only-success.svg)
+![Rust + Swift](https://img.shields.io/badge/built%20with-Rust%20%2B%20Swift-orange.svg)
+
+![TokenDance's menu-bar HUD, with the today total ticking and the burn bar moving](docs/hud.gif)
+
 > 中文一句话：macOS 菜单栏上的 AI 编码 agent 用量仪表——把 Codex、Claude Code 等工具烧掉的
 > token 变成一个随时能看一眼的数字。**用量数据全部在本机解析和保存**。
 > 官方上报/更新/排行榜服务是另一个独立的私有服务，客户端只用 HTTP 跟它说话（见「网络行为」）。
 
-A menu-bar HUD and web dashboard for the token your AI coding agents burn on macOS.
-Everything is parsed and stored locally.
-
-This repository is the whole client: a Swift menu-bar app, the four web pages it serves, and a
-local Rust service that reads the agent transcripts already on disk and writes them to SQLite.
-The official telemetry / update / leaderboard service is a **separate, private service**; the
-client only ever reaches it over HTTP, and every call it makes is listed under
-*Network behaviour* below — including how to point it somewhere else.
-
 ## What it does
 
-- A floating HUD in the menu bar: today's total, live burn rate, cache hit rate, per-agent ranking.
-  It can be dragged, collapsed to the number alone, or docked to the screen edge as a small ring.
-- A web dashboard on `127.0.0.1:8737`: trends by day / source / project / model, a GitHub-style
-  activity calendar, a paged call log, duration & idle analysis.
-- Sources are discovered, not configured: known paths first, then a search by name, then a content
-  scan. Agents installed later show up on their own.
+- **A floating HUD in the menu bar**: today's total with a rolling odometer, live burn rate, cache
+  hit rate, and a per-agent ranking. Draggable; collapses to the number alone; docks to the screen
+  edge as a small ring.
+- **A web dashboard** on `127.0.0.1:8737`: trends by day / source / project / model, a GitHub-style
+  activity calendar, duration and idle analysis, a paged call log, and a page per data source.
+- **Sources are discovered, not configured.** Known paths first, then a search by name, then a
+  content scan of the standard locations. Anything that yields usage gets counted — including
+  agents released after this app was.
 
-Supported out of the box: WorkBuddy, Codex (CLI + desktop), Claude Code, Qwen Code, OpenCode,
-pi, Kimi Code, iFlow, Qoder, Antigravity — plus anything the registry or the content scan finds
-(Goose, for example, was found that way).
+## Why another one of these
+
+There are several good token trackers now. Three things here are the reason this exists:
+
+1. **Discovery instead of a list.** Other tools support a fixed set of agents and grow it by
+   release. This one reads a registry that ships with the app *and* can be updated from the
+   network, then searches by name, then scans for content. A tool nobody has heard of shows up on
+   its own the first time you use it — that is how Goose was found while building this.
+2. **A HUD, not a terminal command.** It answers "what am I burning right now", in the menu bar,
+   without occupying a terminal or asking you to run anything.
+3. **Local by construction.** The server binds `127.0.0.1` and writes SQLite in `~/.tokendance/`.
+   There is no cloud component you have to trust; see *Network behaviour* for the complete list of
+   outbound calls, which is four endpoints and nothing else.
 
 ## Install
 
@@ -34,6 +50,38 @@ The build is **ad-hoc signed, not notarised**, so the first launch is blocked by
 right-click the app → *Open* → *Open* again, or run
 `xattr -dr com.apple.quarantine /Applications/TokenDance.app`.
 You only need to do this once.
+
+## Screenshots
+
+The dashboard — live burn monitor, filters, and a year of activity:
+
+![TokenDance dashboard: live burn monitor, filters and activity calendar](docs/dashboard.png)
+
+Charts, per-model and per-project breakdowns, and which files on disk each number came from:
+
+![Charts, per-model and per-project breakdowns](docs/dashboard-charts.png)
+
+Every data source gets a page: what was detected, where it lives, how much it has produced:
+
+![Data source detail page](docs/sources.png)
+
+## Supported agents
+
+All parsing happens on your machine, and every parser ships with unit tests against synthetic
+samples. Verified against real local data:
+
+- **Codex** CLI and desktop · `~/.codex/sessions/**/rollout-*.jsonl`
+- **Claude Code** · `~/.claude/projects/**/*.jsonl`
+- **OpenCode** · `~/.local/share/opencode/opencode.db` (SQLite)
+- **Antigravity** · `~/.gemini/antigravity/conversations/*.db`
+- **WorkBuddy** · `~/.workbuddy/projects/**/*.jsonl`
+- **Qwen Code** · `~/.qwen/tmp/*/chats/session-*.jsonl`
+
+Integrated from each tool's own format, activates the moment data appears: **pi**, **Kimi Code**,
+**iFlow**, **Qoder**, and **Goose** (found by the registry + content scan rather than by name).
+
+Not supported, because the data isn't usable: Cursor (sparse token counts), Trae (SQLCipher-
+encrypted), Windsurf, CodeBuddy CLI, 通义灵码 / 文心快码 (sessions live server-side).
 
 ## Build from source
 
