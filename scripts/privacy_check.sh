@@ -8,20 +8,25 @@ set -euo pipefail
 cd "$(cd "$(dirname "$0")/.." && pwd)"
 
 echo "==> ① 个人 / 运营痕迹（这些不该出现在公开仓库里）"
-PATTERNS=(
-  "/Users/[a-zA-Z]"          # 绝对家目录路径
-  "115\.29\.196\.[0-9]+"     # 某台服务器的 IP
-  "\.ssh/"                   # 私钥路径
-  "fanshitou_ecs"
-  "ADMIN_TOKEN=[0-9a-f]{16}"
-  "ADMIN_PASSWORD=[^c]"      # 明文口令（占位符是 change-me… 也一样要改）
-)
 bad=0
-for pat in "${PATTERNS[@]}"; do
-  hits="$(grep -rnE --exclude-dir=.git --exclude-dir=target --exclude-dir=build "$pat" . 2>/dev/null || true)"
+excl=(--exclude-dir=.git --exclude-dir=target --exclude-dir=build --exclude=privacy_check.sh)
+
+# a) 当前账号名的绝对路径——真正要防的就是这个（测试夹具里的 /Users/x 是占位符，不算）
+ME="${USER:-$(id -un)}"
+hits="$(grep -rn --exclude-dir=.git --exclude-dir=target --exclude-dir=build --exclude=privacy_check.sh -- "/Users/$ME" . 2>/dev/null || true)"
+if [ -n "$hits" ]; then echo "  ✗ 出现你的家目录路径 (/Users/$ME)"; echo "$hits" | head -5 | sed 's/^/      /'; bad=1; fi
+
+# b) 其它人的 /Users/<名字>——占位符放行，别的一律拦
+hits="$(grep -rnE --exclude-dir=.git --exclude-dir=target --exclude-dir=build --exclude=privacy_check.sh "/Users/[a-zA-Z][a-zA-Z0-9_.-]*" . 2>/dev/null \
+        | grep -vE "/Users/(x|alice|bob|user|you|me|example|test|someone|u)\b" || true)"
+if [ -n "$hits" ]; then echo "  ✗ 出现别人的家目录路径（若确是占位符，加进上面那行的放行名单）"; echo "$hits" | head -5 | sed 's/^/      /'; bad=1; fi
+
+# c) 服务器 / 密钥 / 凭据形态
+for pat in "115\.29\.196\.[0-9]+" "\.ssh/" "fanshitou_ecs" "ADMIN_TOKEN=[0-9a-f]{16}" "ADMIN_PASSWORD=[^c]"; do
+  hits="$(grep -rnE "${excl[@]}" -- "$pat" . 2>/dev/null || true)"
   if [ -n "$hits" ]; then echo "  ✗ /$pat/"; echo "$hits" | head -5 | sed 's/^/      /'; bad=1; fi
 done
-[ "$bad" = 0 ] && echo "  ✓ 干净"
+[ "$bad" = 0 ] && echo "  ✓ 干净（家目录路径只允许占位符，服务器/密钥痕迹一处没有）"
 
 echo "==> ② 远端地址集中在一处（应该只有 ServiceConfig.swift.in 与 README）"
 grep -rln "https://" --exclude-dir=.git --exclude-dir=target --exclude-dir=build . \
