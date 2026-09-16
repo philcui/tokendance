@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TokenDance · 数据源</title>
+<!-- inline so there is no /favicon.ico round-trip: the four pages used to 404 on it -->
+<link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+PGNpcmNsZSBjeD0iMTYiIGN5PSIxNiIgcj0iMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzNiODJmNiIgc3Ryb2tlLXdpZHRoPSI3Ii8+PC9zdmc+">
+<style>
+:root{
+  --bg:#f5f6f8; --card:#fff; --card-2:#fafbfc; --border:#e5e7eb; --text:#1f2937; --muted:#6b7280;
+  --shadow:0 1px 2px rgba(0,0,0,.04); --chip-on:#1f2937; --chip-on-text:#fff; --accent:#2563eb;
+}
+html[data-theme="dark"]{
+  --bg:#161719; --card:#1f2124; --card-2:#242629; --border:#33363a; --text:#e8eaed; --muted:#9aa0a6;
+  --shadow:0 1px 2px rgba(0,0,0,.3); --chip-on:#e8eaed; --chip-on-text:#161719; --accent:#7aa2f7;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+  background:var(--bg);color:var(--text);padding:28px;font-size:14px;transition:background .2s,color .2s}
+.wrap{max-width:900px;margin:0 auto}
+header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;gap:12px}
+h1{font-size:19px}
+.sub{color:var(--muted);font-size:12px;margin-top:3px}
+.nav{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.nav a,.nav .on{color:var(--accent);text-decoration:none;font-size:13px;border:1px solid var(--border);
+  border-radius:8px;padding:7px 13px;background:var(--card);white-space:nowrap}
+.nav a:hover{border-color:var(--accent)}
+.nav .on{color:var(--chip-on-text);background:var(--chip-on);border-color:var(--chip-on);
+  font-weight:600;cursor:default}
+.sum{font-size:12px;color:var(--muted);margin-bottom:14px}
+.sum b{color:var(--text);font-variant-numeric:tabular-nums}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:640px){.grid{grid-template-columns:1fr}}
+.src{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:15px 16px;box-shadow:var(--shadow)}
+.src.off{opacity:.55}
+.src .head{display:flex;align-items:center;gap:11px;margin-bottom:11px}
+.src .icon{width:38px;height:38px;border-radius:9px;flex:none;display:flex;align-items:center;justify-content:center;
+  color:#fff;font-weight:700;font-size:17px}
+.src .nm{font-size:14px;font-weight:700;line-height:1.2}
+.src .st{font-size:11px;margin-top:2px}
+.src .st.on{color:#059669}
+.src .st.offst{color:var(--muted)}
+.src .cand{font-size:11px;color:var(--muted);margin-top:8px;line-height:1.5}
+.kv{display:grid;grid-template-columns:1fr 1fr;gap:5px 14px}
+.kv .row{display:flex;justify-content:space-between;font-size:12px;
+  border-bottom:1px solid var(--border);padding:4px 0}
+.kv .row:last-child,.kv .row:nth-last-child(2){border-bottom:none}
+.kv .k{color:var(--muted)}
+.kv .v{font-variant-numeric:tabular-nums;font-weight:600}
+.note{font-size:11px;color:var(--muted);margin-top:14px;line-height:1.6}
+.reg{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:14px;box-shadow:var(--shadow)}
+.reg-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12px}
+.reg-row .k{color:var(--muted)} .reg-row .v{font-weight:600;font-variant-numeric:tabular-nums}
+.reg-row .sep{color:var(--muted)}
+.reg .btn{border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-size:12px;background:var(--card);color:var(--text);cursor:pointer}
+.reg .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.reg .btn:disabled{opacity:.6;cursor:default}
+.prog{height:4px;border-radius:2px;background:var(--track);margin:10px 0 6px;overflow:hidden}
+.prog .bar{height:100%;width:0;background:var(--accent);transition:width .3s}
+.phase{font-size:12px;color:var(--muted);margin-bottom:6px}
+#scanLog{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;line-height:1.55;background:var(--card-2);border:1px solid var(--border);border-radius:8px;padding:10px;max-height:220px;overflow:auto;white-space:pre-wrap;margin:0}
+#scanResult{margin-top:10px;font-size:12px}
+#scanResult table{border-collapse:collapse;width:100%;font-size:11px}
+#scanResult th,#scanResult td{text-align:left;padding:4px 6px;border-bottom:1px solid var(--row-border)}
+.hint2{font-size:11px;color:var(--muted);margin-top:8px}
+code{font-family:ui-monospace,Menlo,monospace;font-size:11px;background:var(--card-2);
+  border:1px solid var(--border);border-radius:4px;padding:1px 4px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1 data-i18n="title">数据源详情</h1>
+      <div class="sub" data-i18n="sub">每个数据源的转录文件与用量统计 · 自动发现，无需配置</div>
+    </div>
+    <nav class="nav">
+      <a href="/" data-i18n="nav_home">主页</a>
+      <span class="on" data-i18n="nav_sources">数据源</span>
+      <a href="/settings" data-i18n="nav_settings">设置</a>
+      <a href="/about" data-i18n="nav_about">关于</a>
+    </nav>
+  </header>
+  <!-- 数据源名单 + 重新扫描：原来在设置页，2026-09-16 挪到这里（那页的"数据源名单"与
+       "添加数据源"两张卡都删掉了）。用户不需要输入名字或路径，只需要知道"现在有哪些
+       工具在被统计"以及"这次扫描发现了什么"——所以只有两个按钮：更新名单、重新扫描。 -->
+  <div class="reg">
+    <div class="reg-row">
+      <span class="k" data-i18n="reg_h">数据源名单</span>
+      <span class="v" id="regCount">—</span>
+      <span class="sep">·</span>
+      <span class="k" data-i18n="reg_hits">本机命中</span>
+      <span class="v" id="regHits">—</span>
+      <span class="sep">·</span>
+      <span class="k" data-i18n="reg_from">名单来源</span>
+      <span class="v" id="regFrom">—</span>
+      <span style="flex:1"></span>
+      <button class="btn" id="regUpdate" data-i18n="reg_update">更新名单</button>
+      <button class="btn primary" id="scanBtn" data-i18n="scan">重新扫描</button>
+    </div>
+    <div id="scanBox" style="display:none">
+      <div class="prog"><div class="bar" id="scanBar"></div></div>
+      <div class="phase" id="scanPhase"></div>
+      <pre id="scanLog"></pre>
+      <div id="scanResult"></div>
+    </div>
+    <div class="hint2" id="regResult"></div>
+  </div>
+  <div class="sum" id="sum"></div>
+  <div class="grid" id="grid"></div>
+  <div class="note" data-i18n="note">这里只列出本机真正统计到用量的数据源。文件数与体积来自转录目录扫描，用量由本机数据库按数据源聚合。燃烧 = 输入 + 输出；「今日」按本机日历日。</div>
+</div>
+
+<script>
+const I18N = {
+  zh:{ title:'数据源详情', sub:'每个数据源的转录文件与用量统计 · 自动发现，无需配置',
+       nav_home:'主页', nav_sources:'数据源', nav_settings:'设置', nav_about:'关于',
+       detected:'统计中',
+       reg_h:'数据源名单', reg_hits:'本机命中', reg_from:'名单来源',
+       reg_update:'更新名单', scan:'重新扫描',
+       scan_running:'扫描中…', scan_done:'扫描完成', scan_failed:'扫描失败',
+       scan_report:'扫描结果', scan_tier:'层级', scan_name:'数据源', scan_files:'文件', scan_lines:'可解析行', scan_how:'归属',
+       files:'转录文件', bytes:'转录体积', calls:'累计调用', sessions:'会话数',
+       today_calls:'今日调用', today_burn:'今日燃烧', rate:'缓存命中率', last:'最近活动',
+       none:'—', sum:(n,f,b)=>'检测到 <b>'+n+'</b> 个数据源 · 共 <b>'+f+'</b> 个转录文件 · <b>'+b+'</b>',
+       empty_sources:'本机还没有正在统计的数据源 · 运行 AI 编码工具后自动出现',
+       ag_unconfirmed:'检测到 · 用量口径待确认',
+       ag_candidate:'候选用量（未计入总量）',
+       ag_gens:'次生成',
+       fail:'加载失败：',
+       note:'这里只列出本机真正统计到用量的数据源。文件数与体积来自转录目录扫描，用量由本机数据库按数据源聚合。燃烧 = 输入 + 输出；「今日」按本机日历日。' },
+      en:{ title:'Sources', sub:'Transcript files and usage per source · auto-detected, zero config',
+       nav_home:'Home', nav_sources:'Sources', nav_settings:'Settings', nav_about:'About',
+       detected:'counting',
+       reg_h:'Source registry', reg_hits:'Matched here', reg_from:'Registry source',
+       reg_update:'Update list', scan:'Rescan',
+       scan_running:'Scanning…', scan_done:'Scan complete', scan_failed:'Scan failed',
+       scan_report:'Result', scan_tier:'Tier', scan_name:'Source', scan_files:'Files', scan_lines:'Parsed lines', scan_how:'Owner',
+       files:'Transcript files', bytes:'Transcript size', calls:'Total calls', sessions:'Sessions',
+       today_calls:'Calls today', today_burn:'Burn today', rate:'Cache hit rate', last:'Last activity',
+       none:'—', sum:(n,f,b)=>'<b>'+n+'</b> sources detected · <b>'+f+'</b> transcript files · <b>'+b+'</b>',
+       empty_sources:'No source on this Mac is producing usage yet — run an AI coding tool and it will appear',
+       ag_unconfirmed:'found · usage mapping unconfirmed',
+       ag_candidate:'candidate usage (not counted)',
+       ag_gens:'generations',
+       fail:'Load failed: ',
+       note:'Only sources that actually produced usage on this Mac are listed. File and byte counts come from scanning the transcript directories; usage is aggregated per source from the local database. Burn = input + output; “today” is the local calendar day.' }
+};
+// monogram tiles: distinct hue per source, glyph where one exists
+// Names come from the server with the source list (/api/sources); only the tiles
+// are local, and an unknown source falls back to a grey tile with its initial.
+const ICONS = [
+  // index = agent id. Gemini CLI was retired upstream and its slot removed, so
+  // this list must stay in step with AGENT_NAMES or every tile from Qwen on
+  // wears someone else's colour.
+  {bg:'#7c5cff', g:'W'}, {bg:'#10a37f', g:'⌁'}, {bg:'#d97757', g:'✳'},
+  {bg:'#6f42c1', g:'Q'}, {bg:'#0ea5e9', g:'{ }'},
+  {bg:'#e05656', g:'π'}, {bg:'#f59e0b', g:'K'}, {bg:'#14b8a6', g:'≈'},
+  {bg:'#64748b', g:'Q'}, {bg:'#4285f4', g:'✦'},
+];
+let LANG = 'sys';
+let THEME = 'auto';
+const sysLang = () => (navigator.language||'zh').toLowerCase().startsWith('zh') ? 'zh' : 'en';
+const sysTheme = () => matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+const resolvedLang = () => LANG === 'sys' ? sysLang() : LANG;
+// "auto" follows the system; a pinned light/dark choice has to win over it.
+// This page used to read the system value only, so pinning a theme in Settings
+// left the other three pages dark and this one light.
+const resolvedTheme = () => THEME === 'auto' ? sysTheme() : THEME;
+function t(k){ return (I18N[resolvedLang()]||I18N.zh)[k] || I18N.zh[k] || k; }
+// The Chinese text in the markup is a placeholder that ships with a data-i18n
+// key; nothing rewrote it, so the header, nav and note stayed Chinese even with
+// the language preference set to English (the tiles below were fine — they go
+// through t()). Rewriting them here is what makes this page switch.
+function applyText(){
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const v = t(el.dataset.i18n);
+    if (typeof v === 'string') el.textContent = v;
+  });
+}
+function applyPrefs(){
+  document.documentElement.dataset.theme = resolvedTheme();
+  document.documentElement.lang = resolvedLang() === 'en' ? 'en' : 'zh-CN';
+  document.title = resolvedLang()==='en' ? 'TokenDance · Sources' : 'TokenDance · 数据源';
+  applyText();
+}
+function fmt(n){ return n >= 1e8 ? (n/1e8).toFixed(2)+'亿' : n >= 1e4 ? (n/1e4).toFixed(1)+'万'
+  : n >= 1e3 ? (n/1e3).toFixed(1)+'K' : String(n); }
+function fmtEn(n){ return n >= 1e9 ? (n/1e9).toFixed(2)+'B' : n >= 1e6 ? (n/1e6).toFixed(1)+'M'
+  : n >= 1e3 ? (n/1e3).toFixed(1)+'K' : String(n); }
+function num(n){ return resolvedLang()==='en' ? fmtEn(n) : fmt(n); }
+function bytesH(b){ const u = resolvedLang()==='en' ? ['B','KB','MB','GB'] : ['B','KB','MB','GB'];
+  let i = 0; while (b >= 1024 && i < 3){ b /= 1024; i++; } return b.toFixed(i?1:0)+u[i]; }
+function agoH(ms){
+  const s = Math.max(0, (Date.now()-ms)/1000);
+  if (s < 60) return resolvedLang()==='en' ? Math.round(s)+'s ago' : Math.round(s)+' 秒前';
+  if (s < 3600) return resolvedLang()==='en' ? Math.round(s/60)+'m ago' : Math.round(s/60)+' 分钟前';
+  if (s < 86400) return resolvedLang()==='en' ? Math.round(s/3600)+'h ago' : Math.round(s/3600)+' 小时前';
+  return resolvedLang()==='en' ? Math.round(s/86400)+'d ago' : Math.round(s/86400)+' 天前';
+}
+let lastT = {};
+let LAST = {sources: [], records: []};
+// A source is listed when it actually contributed usage on this machine.
+// `records` comes from /api/sources (the server counts them once for all three
+// pages); the fallback counts the records we were handed.
+function recordsFor(s, records){
+  if (s.records != null) return s.records;
+  return records.reduce((n, r) => n + (r.a === s.agent ? 1 : 0), 0);
+}
+function render(sources, records){
+  LAST = {sources, records};
+  const todayKey = new Date().toDateString();
+  // Only the sources that really produced usage: a known format this machine
+  // never used is not one of this install's data sources, and a card saying
+  // "not detected" is noise rather than information.
+  const shown = sources.filter(s => recordsFor(s, records) > 0);
+  const st = shown.map(() => ({calls:0, sessions:new Set(), tcalls:0, burn:0, i:0, c:0, last:0}));
+  for (const r of records){
+    const a = st[r.a]; if (!a) continue;
+    a.calls++; a.sessions.add(r.s);
+    if (new Date(r.t).toDateString() === todayKey){ a.tcalls++; a.burn += r.i + r.o; }
+    a.i += r.i; a.c += r.c;
+    if (r.t > a.last) a.last = r.t;
+  }
+  const tf = shown.reduce((x,s) => x + s.files, 0);
+  const tb = shown.reduce((x,s) => x + s.bytes, 0);
+  document.getElementById('sum').innerHTML = shown.length
+    ? t('sum')(shown.length, tf, bytesH(tb))
+    : t('empty_sources');
+  document.getElementById('grid').innerHTML = shown.map(s => {
+    const a = st[s.agent] || {calls:0,sessions:new Set(),tcalls:0,burn:0,i:0,c:0,last:0};
+    // Every card here is a source that produced records, so the tile is "on" by
+    // definition; the only exception is a source whose field mapping is not
+    // confirmed (its numbers are shown as candidates, not counted).
+    const on = s.parseable !== false;
+    const ic = ICONS[s.agent] || {bg:'#64748b', g:(s.name||'?')[0]};
+    const rate = a.i > 0 ? (100*a.c/a.i).toFixed(1)+'%' : t('none');
+    // `parseable:false` means: the data is real and visible, but we have not
+    // confirmed which field is what, so it is deliberately *not* counted. Saying
+    // "detected" alone would imply the numbers are in the totals.
+    const state = s.parseable === false ? '◐ ' + t('ag_unconfirmed') : '● ' + t('detected');
+    const rows = [
+      [t('files'), s.files ? num(s.files) : t('none')],
+      [t('bytes'), s.bytes ? bytesH(s.bytes) : t('none')],
+      [t('calls'), a.calls ? num(a.calls) : t('none')],
+      [t('sessions'), a.sessions.size ? num(a.sessions.size) : t('none')],
+      [t('today_calls'), a.tcalls ? num(a.tcalls) : t('none')],
+      [t('today_burn'), a.tcalls ? num(a.burn) : t('none')],
+      [t('rate'), a.calls ? rate : t('none')],
+      [t('last'), a.last ? agoH(a.last) : t('none')],
+    ];
+    return '<div class="src'+(on?'':' off')+'">'
+      + '<div class="head">'
+      +   '<div class="icon" style="background:'+ic.bg+'">'+ic.g+'</div>'
+      +   '<div><div class="nm">'+s.name+'</div>'
+      +   '<div class="st '+(on?'on':'offst')+'">'+state+'</div></div>'
+      + '</div>'
+      + '<div class="kv">'+rows.map(r => '<div class="row"><span class="k">'+r[0]+'</span><span class="v">'+r[1]+'</span></div>').join('')+'</div>'
+      + (s.candidate && s.generations
+          ? '<div class="cand">'+t('ag_candidate')+': prompt '+num(s.candidate.prompt)
+            +' · cached '+num(s.candidate.cached)+' · output '+num(s.candidate.output)
+            +' · '+s.generations+' '+t('ag_gens')+'</div>'
+          : '')
+      + '</div>';
+  }).join('');
+}
+async function load(){
+  applyPrefs();
+  try{
+    const [ps, pd] = await Promise.all([
+      fetch('/api/sources', {cache:'no-store'}),
+      fetch('/api/data', {cache:'no-store'})
+    ]);
+    const sj = await ps.json(), dj = await pd.json();
+    try{
+      const cfg = await (await fetch('/api/settings', {cache:'no-store'})).json();
+      if (cfg.lang) LANG = cfg.lang;
+      if (cfg.theme) THEME = cfg.theme;
+    }catch(e){}
+    applyPrefs();
+    render(sj.sources || [], dj.records || []);
+  }catch(e){
+    document.getElementById('sum').textContent = t('fail') + e;
+  }
+}
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyPrefs);
+// follow preference changes made elsewhere (Settings page, native app) — the
+// other three pages poll for this; this one did not, so a language switch in
+// Settings only took effect here on a reload.
+setInterval(async () => {
+  try{
+    const p = await (await fetch('/api/settings', {cache:'no-store'})).json();
+    const nl = p.lang || 'sys', nt = p.theme || 'auto';
+    if (nl !== LANG || nt !== THEME){
+      const langChanged = nl !== LANG;
+      LANG = nl; THEME = nt;
+      applyPrefs();
+      if (langChanged && LAST.sources.length) render(LAST.sources, LAST.records);
+    }
+  }catch(e){}
+}, 5000);
+
+// ---- 数据源名单 + 重新扫描（2026-09-16 从设置页搬来，并把"添加数据源"整个去掉）----
+// 扫描在服务端后台跑：POST 开始，然后每 0.7 秒取一次 /api/scan/status，
+// 把阶段、日志、结果画出来。日志里每一行都是服务端真写的一行（三层发现的命中明细）。
+const SCAN = {timer:null};
+function scanEls(){ return {
+  box: document.getElementById('scanBox'), bar: document.getElementById('scanBar'),
+  phase: document.getElementById('scanPhase'), log: document.getElementById('scanLog'),
+  result: document.getElementById('scanResult'), btn: document.getElementById('scanBtn') }; }
+
+async function regLoad(){
+  try{
+    const r = await (await fetch('/api/registry', {cache:'no-store'})).json();
+    document.getElementById('regCount').textContent = r.count ?? '—';
+    document.getElementById('regHits').textContent = r.hits ?? '—';
+    // 名单来源："内置" + 是否有本地覆盖/是否拉过远端
+    const from = [];
+    if (r.local_overlay) from.push('本地覆盖');
+    from.push(r.fetched_from ? ('已拉取 ' + r.fetched_from) : '内置');
+    document.getElementById('regFrom').textContent = from.join(' · ');
+  }catch(e){}
+}
+
+document.getElementById('regUpdate').onclick = async function(){
+  const btn = this; btn.disabled = true; const old = btn.textContent;
+  btn.textContent = t('scan_running');
+  try{
+    const r = await (await fetch('/api/registry/update', {method:'POST',
+      headers:{'Content-Type':'application/json'}, body:'{}'})).json();
+    document.getElementById('regResult').textContent = r.ok
+      ? ('✓ 名单已更新：本地覆盖 ' + (r.added ?? 0) + ' 条 · 名单日期 ' + (r.updated || '—'))
+      : ('✗ ' + (r.error || ''));
+    await regLoad();
+  }catch(e){ document.getElementById('regResult').textContent = '✗ ' + e; }
+  btn.disabled = false; btn.textContent = old;
+};
+
+function scanRender(st){
+  const e = scanEls();
+  e.log.textContent = (st.log || []).join('\n');
+  e.log.scrollTop = e.log.scrollHeight;
+  e.phase.textContent = st.running
+    ? (t('scan_running') + ' ' + (st.phase || '') + (st.elapsed_s ? ' · ' + st.elapsed_s + 's' : ''))
+    : (t('scan_done') + ' · ' + (st.elapsed_s || 0) + 's');
+  // 进度条：扫描大致分三段，运行中按时间推进到 90%，结束时补满
+  e.bar.style.width = st.running ? Math.min(90, 10 + (st.elapsed_s || 0) * 6) + '%' : '100%';
+  const rep = st.report || {};
+  const hits = rep.hits || [];
+  if (hits.length){
+    e.result.innerHTML = '<b>' + t('scan_report') + '：</b> '
+      + (rep.added && rep.added.length ? ('新收录 ' + rep.added.join('、')) : '没有新增数据源')
+      + ' · 当前记录 ' + (rep.records_after ?? st.records)
+      + '<table><tr><th>' + t('scan_tier') + '</th><th>' + t('scan_name') + '</th><th>'
+      + t('scan_files') + '</th><th>' + t('scan_lines') + '</th><th>' + t('scan_how') + '</th></tr>'
+      + hits.map(h => '<tr><td>T' + (h.tier || '?') + '</td><td>' + (h.name || '') + '</td><td>'
+          + (h.files ?? '') + '</td><td>' + (h.lines ?? '') + '</td><td>'
+          + (h.claimed_by ? h.claimed_by : (h.added ? '新收录' : '已收录')) + '</td></tr>').join('')
+      + '</table>';
+  }
+}
+
+document.getElementById('scanBtn').onclick = async function(){
+  const e = scanEls();
+  e.box.style.display = 'block'; e.btn.disabled = true;
+  e.bar.style.width = '5%'; e.log.textContent = ''; e.result.innerHTML = '';
+  e.phase.textContent = t('scan_running');
+  try{
+    await fetch('/api/scan/start', {method:'POST'});
+  }catch(err){ e.phase.textContent = t('scan_failed') + '：' + err; e.btn.disabled = false; return; }
+  clearInterval(SCAN.timer);
+  SCAN.timer = setInterval(async () => {
+    try{
+      const st = await (await fetch('/api/scan/status', {cache:'no-store'})).json();
+      scanRender(st);
+      if (!st.running){
+        clearInterval(SCAN.timer); SCAN.timer = null; e.btn.disabled = false;
+        load();                 // 数据表也跟着刷新
+        regLoad();
+      }
+    }catch(err){}
+  }, 700);
+};
+regLoad();
+
+load();
+</script>
+</body>
+</html>

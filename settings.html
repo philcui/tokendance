@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TokenDance · 设置</title>
+<!-- inline so there is no /favicon.ico round-trip: the four pages used to 404 on it -->
+<link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+PGNpcmNsZSBjeD0iMTYiIGN5PSIxNiIgcj0iMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzNiODJmNiIgc3Ryb2tlLXdpZHRoPSI3Ii8+PC9zdmc+">
+<style>
+:root{
+  --bg:#f5f6f8; --card:#fff; --card-2:#fafbfc; --border:#e5e7eb; --text:#1f2937; --muted:#6b7280;
+  --chip:#fff; --chip-on:#1f2937; --chip-on-text:#fff; --shadow:0 1px 2px rgba(0,0,0,.04);
+  --accent:#2563eb;
+}
+html[data-theme="dark"]{
+  --bg:#161719; --card:#1f2124; --card-2:#242629; --border:#33363a; --text:#e8eaed; --muted:#9aa0a6;
+  --chip:#242629; --chip-on:#e8eaed; --chip-on-text:#161719; --shadow:0 1px 2px rgba(0,0,0,.3);
+  --accent:#7aa2f7;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+  background:var(--bg);color:var(--text);padding:28px;font-size:14px;transition:background .2s,color .2s}
+.wrap{max-width:760px;margin:0 auto}
+header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;gap:12px}
+h1{font-size:19px;display:flex;align-items:center;gap:9px}
+.sub{color:var(--muted);font-size:12px;margin-top:3px}
+.nav{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.nav a,.nav .on{color:var(--accent);text-decoration:none;font-size:13px;border:1px solid var(--border);
+  border-radius:8px;padding:7px 13px;background:var(--card);white-space:nowrap}
+.nav a:hover{border-color:var(--accent)}
+.nav .on{color:var(--chip-on-text);background:var(--chip-on);border-color:var(--chip-on);
+  font-weight:600;cursor:default}
+.mac-window{display:inline-flex;gap:6px;margin-right:2px}
+.mac-window i{width:11px;height:11px;border-radius:50%;display:block}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin-bottom:14px;box-shadow:var(--shadow)}
+.card h2{font-size:13px;margin-bottom:4px}
+.card .note{font-size:11px;color:var(--muted);margin-bottom:12px;line-height:1.5}
+.seg{display:inline-flex;border:1px solid var(--border);border-radius:9px;overflow:hidden;background:var(--card-2)}
+.seg button{border:none;background:transparent;color:var(--text);padding:8px 16px;font-size:13px;cursor:pointer}
+.seg button+button{border-left:1px solid var(--border)}
+.seg button.on{background:var(--chip-on);color:var(--chip-on-text)}
+.seg button:hover:not(.on){background:var(--card-2)}
+.src-row{display:flex;justify-content:space-between;align-items:center;font-size:13px;
+  padding:7px 0;border-bottom:1px solid var(--border)}
+.src-row:last-of-type{border-bottom:none}
+.src-row .n{font-weight:600}
+.src-row .c{color:var(--muted);font-variant-numeric:tabular-nums}
+.src-row .c.zero{opacity:.45}
+.btn{border:1px solid var(--border);border-radius:8px;padding:8px 14px;font-size:13px;cursor:pointer;
+  background:var(--card);color:var(--text)}
+.btn:hover{background:var(--card-2)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.primary:hover{opacity:.9;background:var(--accent)}
+.steps{display:flex;flex-direction:column;gap:12px}
+.step{display:flex;gap:10px}
+.sn{flex:none;width:20px;height:20px;border-radius:50%;background:var(--chip-on);color:var(--chip-on-text);
+  font-size:11px;display:flex;align-items:center;justify-content:center;margin-top:1px}
+.sb{flex:1;min-width:0}
+.st{font-size:12px;font-weight:600;margin-bottom:6px}
+.row{display:flex;gap:6px;flex-wrap:wrap}
+.row input[type=text]{flex:1;min-width:220px}
+/* The dashboard got this treatment when the user complained about bare-looking
+   controls; Settings was missed, so its path field and format dropdown still
+   wore the OS skin (a square grey popup next to rounded cards). Same rules,
+   same chevron, so the two pages match. */
+select, input[type=text]{font-family:inherit;color:var(--text);background:var(--card);
+  border:1px solid var(--border);border-radius:8px;padding:7px 10px;font-size:12.5px}
+select{appearance:none;-webkit-appearance:none;padding-right:26px;
+  background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%236b7280' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 9px center;background-size:10px 6px}
+html[data-theme="dark"] select{
+  background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%239aa0a6' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E")}
+select:focus, input:focus-visible, button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.hint2{font-size:11px;color:var(--muted);margin-top:6px;line-height:1.5}
+.result{font-size:12px;line-height:1.7;color:var(--muted);white-space:pre-wrap;word-break:break-word}
+.result b{color:var(--text)}
+.result .ok{color:#059669}.result .bad{color:#dc2626}
+.fields{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px}
+.fields input{font-size:11.5px}
+.cusrow{display:flex;align-items:center;gap:8px;font-size:12px;padding:7px 0;border-top:1px solid var(--border)}
+.cusrow .nm{font-weight:600;min-width:110px}
+.cusrow .pth{font-family:ui-monospace,Menlo,monospace;font-size:11px;color:var(--muted);flex:1;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cusrow .rm{color:#dc2626;cursor:pointer;font-size:11px}
+.tier{display:inline-block;font-size:10px;padding:1px 6px;border-radius:8px;background:var(--card-2);
+  border:1px solid var(--border);color:var(--muted);vertical-align:1px}
+.badge{display:inline-block;font-size:10px;font-weight:400;padding:1px 6px;border-radius:8px;
+  background:var(--chip-on);color:var(--chip-on-text);vertical-align:1px}
+.btn:disabled{opacity:.6;cursor:default}
+.btn.full{width:100%;margin-top:12px}
+#srcList{max-height:290px;overflow:auto;padding-right:4px}
+.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(12px);
+  background:var(--chip-on);color:var(--chip-on-text);padding:9px 18px;border-radius:20px;font-size:13px;
+  opacity:0;pointer-events:none;transition:opacity .2s,transform .2s}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+.hint{font-size:11px;color:var(--muted);margin-top:10px;line-height:1.55}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1><span data-i18n="title">设置</span></h1>
+      <div class="sub" data-i18n="sub">原生挂件与网页共用同一份设置 · 改动即时生效</div>
+    </div>
+    <nav class="nav">
+      <a href="/" data-i18n="nav_home">主页</a>
+      <a href="/sources" data-i18n="nav_sources">数据源</a>
+      <span class="on" data-i18n="nav_settings">设置</span>
+      <a href="/about" data-i18n="nav_about">关于</a>
+    </nav>
+  </header>
+
+  <div class="card">
+    <h2 data-i18n="lang_h">界面语言</h2>
+    <div class="seg" id="langSeg">
+      <button data-v="sys" data-i18n="auto">跟随系统</button>
+      <button data-v="zh">中文</button>
+      <button data-v="en">English</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2 data-i18n="theme_h">主题外观</h2>
+    <div class="note" data-i18n="theme_n">默认跟随系统浅色 / 深色；挂件的玻璃、文字与图标会一起切换。</div>
+    <div class="seg" id="themeSeg">
+      <button data-v="auto" data-i18n="auto">跟随系统</button>
+      <button data-v="light" data-i18n="light">浅色</button>
+      <button data-v="dark" data-i18n="dark">深色</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2 data-i18n="src_h">数据源检测</h2>
+    <div class="note" data-i18n="src_n">新安装的 agent 会被自动发现。「重新扫描」在<a href="/sources" id="srcLink" style="color:var(--accent);text-decoration:none" data-i18n="src_link">数据源详情 →</a>里。</div>
+    <div id="srcList"></div>
+  </div>
+
+
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const I18N = {
+  zh:{ title:'设置', sub:'原生挂件与网页共用同一份设置 · 改动即时生效',
+       nav_home:'主页', nav_sources:'数据源', nav_settings:'设置', nav_about:'关于',
+       lang_h:'界面语言',
+       theme_h:'主题外观', theme_n:'默认跟随系统浅色 / 深色；挂件的玻璃、文字与图标会一起切换。',
+       auto:'跟随系统', light:'浅色', dark:'深色',
+       src_h:'数据源', src_n:'只列出本机真正统计到用量的数据源。新安装的 agent 会被自动发现；「重新扫描」在数据源详情页里。',
+       src_empty:'本机还没有正在统计的数据源 · 运行 AI 编码工具后自动出现', loc_records:'条记录', src_link:'数据源详情 →',
+       saved:'已保存',
+       fail:'加载失败：' },
+  en:{ title:'Settings', sub:'The native HUD and the web UI share one set of preferences · changes apply instantly',
+       nav_home:'Home', nav_sources:'Sources', nav_settings:'Settings', nav_about:'About',
+       lang_h:'Language',
+       theme_h:'Appearance', theme_n:'Follows the system light / dark mode by default; the HUD glass, text and icons switch with it.',
+       auto:'System', light:'Light', dark:'Dark',
+       src_h:'Data sources', src_n:'Newly installed agents are detected automatically. "Rescan" lives under Source details.',
+       src_empty:'No source on this Mac is producing usage yet — run an AI coding tool and it will appear', loc_records:'records', src_link:'Source details →',
+       saved:'Saved',
+       fail:'Load failed: ' }
+};
+let PREFS = {lang:'sys', theme:'auto'};
+const sysLang = () => (navigator.language||'zh').toLowerCase().startsWith('zh') ? 'zh' : 'en';
+const sysTheme = () => matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+const resolvedLang = () => PREFS.lang === 'sys' ? sysLang() : PREFS.lang;
+const resolvedTheme = () => PREFS.theme === 'auto' ? sysTheme() : PREFS.theme;
+function t(k){ const L = resolvedLang(); return (I18N[L]||I18N.zh)[k] || I18N.zh[k] || k; }
+
+function apply(){
+  document.documentElement.lang = resolvedLang() === 'en' ? 'en' : 'zh-CN';
+  document.documentElement.dataset.theme = resolvedTheme();
+  document.title = (resolvedLang()==='en' ? 'TokenDance · Settings' : 'TokenDance · 设置');
+  document.querySelectorAll('[data-i18n]').forEach(el => el.textContent = t(el.dataset.i18n));
+  document.querySelectorAll('#langSeg button').forEach(b => b.classList.toggle('on', b.dataset.v === PREFS.lang));
+  document.querySelectorAll('#themeSeg button').forEach(b => b.classList.toggle('on', b.dataset.v === PREFS.theme));
+  renderSources();
+}
+let toastTimer = null;
+function toast(msg){
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('on');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('on'), 1600);
+}
+function renderSources(){
+  const box = document.getElementById('srcList');
+  fetch('/api/sources').then(r => r.json()).then(d => {
+    // Same rule as the other two pages: a source is listed when it has produced
+    // records on this machine. The nine built-ins this Mac has never used are
+    // not a status to report, they are simply not this install's data sources.
+    const shown = (d.sources||[]).filter(s => (s.records || 0) > 0)
+      .sort((a,b) => (b.records||0) - (a.records||0));
+    box.innerHTML = shown.length
+      ? shown.map(s => '<div class="src-row"><span class="n">'+s.name+'</span>'+
+          '<span class="c">'+(s.records||0)+' '+t('loc_records')+'</span></div>').join('')
+      : '<div class="hint2">'+t('src_empty')+'</div>';
+  }).catch(e => { box.innerHTML = '<div class="hint">'+t('fail')+e+'</div>'; });
+}
+async function loadPrefs(){
+  try{
+    const r = await fetch('/api/settings', {cache:'no-store'});
+    PREFS = await r.json();
+    if (!PREFS.lang) PREFS.lang = 'sys';
+    if (!PREFS.theme) PREFS.theme = 'auto';
+  }catch(e){}
+  apply();
+}
+async function savePrefs(patch){
+  Object.assign(PREFS, patch);
+  apply();
+  try{
+    const r = await fetch('/api/settings', {method:'POST', headers:{'Content-Type':'application/json'},
+                                            body: JSON.stringify(patch)});
+    PREFS = await r.json();
+    apply();
+    toast(t('saved'));
+  }catch(e){}
+}
+document.querySelectorAll('#langSeg button').forEach(b => b.onclick = () => savePrefs({lang: b.dataset.v}));
+document.querySelectorAll('#themeSeg button').forEach(b => b.onclick = () => savePrefs({theme: b.dataset.v}));
+// keep in step when the preference changes elsewhere (other tab, native app)
+setInterval(async () => {
+  try{
+    const r = await fetch('/api/settings', {cache:'no-store'});
+    const p = await r.json();
+    if (p.lang !== PREFS.lang || p.theme !== PREFS.theme) { PREFS = p; apply(); }
+  }catch(e){}
+}, 5000);
+// re-resolve 'auto' the moment the OS switches appearance
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', apply);
+
+loadPrefs();
+</script>
+</body>
+</html>

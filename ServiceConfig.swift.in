@@ -1,0 +1,14 @@
+// 客户端里**唯一**写死远端地址的地方。这个文件是模板：
+// `client/scripts/build_app.sh` 会把它生成到 build/ 下再编译，可以用环境变量覆盖：
+//
+//   SERVICE_BASE=https://your.host/base ./scripts/build_app.sh
+//
+// 一个前缀就够了——匿名上报、更新检查、排行榜、名单（`<base>/registry.json`）
+// 都挂在这下面；匿名上报/更新/排行榜的实际地址由 app 用 `telURL()` 拼出来，
+// 本地服务端的名单地址由 app 拉起它时注入（`TOKENDANCE_REGISTRY_URL`）。
+//
+// 运行时还能再改（用户级）：`defaults write com.tokendance.app tb_tel_url <地址>`。
+enum ServiceConfig {
+    /// 官方服务：`https://fanshitou.cn/tokendance`。自建/改名只改这一行，或构建时用 SERVICE_BASE 覆盖。
+    static let base = "__SERVICE_BASE__"
+}

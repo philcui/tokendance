@@ -1,0 +1,14 @@
+# --- 构建产物（客户端自己产出的，永远不入库）---
+build/
+**/target/
+*.app/
+DerivedData/
+
+# --- 本地数据（绝不提交用户数据）---
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+
+# --- 系统垃圾 ---
+.DS_Store

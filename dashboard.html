@@ -1,0 +1,1449 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-page-node-id="c91zZFQj74ma65DSWhKDB2">
+<head data-page-node-id="5KcnJTaZfjZQWuATYhCHQu">
+<meta charset="UTF-8" data-page-node-id="23NNDgHwyonE0eiUsOZBfN">
+<meta name="viewport" content="width=device-width, initial-scale=1.0" data-page-node-id="6Q5fHdT5dlLBYjAaryFcFD">
+<title>TokenDance · Token 用量仪表盘</title>
+<!-- inline so there is no /favicon.ico round-trip: the four pages used to 404 on it -->
+<link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+PGNpcmNsZSBjeD0iMTYiIGN5PSIxNiIgcj0iMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzNiODJmNiIgc3Ryb2tlLXdpZHRoPSI3Ii8+PC9zdmc+">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<style>
+:root{
+  --bg:#f5f6f8; --card:#fff; --card-2:#fafbfc; --border:#e5e7eb; --text:#1f2937; --muted:#6b7280;
+  --red:#dc2626; --blue:#2563eb; --purple:#7c3aed; --teal:#0d9488; --orange:#ea580c;
+  --chip-on:#1f2937; --chip-on-text:#fff; --track:#eef0f3; --row-border:#f1f2f4; --accent:#2563eb;
+  /* activity calendar ramp — the page's own blue, five steps; see .cal below */
+  --cal0:#eaeef3; --cal1:#cfe0fd; --cal2:#9dc0fb; --cal3:#4f86f7; --cal4:#1e40af;
+}
+html[data-theme="dark"]{
+  --bg:#161719; --card:#1f2124; --card-2:#242629; --border:#33363a; --text:#e8eaed; --muted:#9aa0a6;
+  --red:#f87171; --blue:#7aa2f7; --purple:#a78bfa; --teal:#2dd4bf; --orange:#fb923c;
+  --chip-on:#e8eaed; --chip-on-text:#161719; --track:#2b2e32; --row-border:#2c2f33; --accent:#7aa2f7;
+  /* dark: "more" has to read as *brighter* against the card, so the ramp runs
+     the other way (deep → light) instead of light → deep */
+  --cal0:#2b2e33; --cal1:#1e3a6e; --cal2:#2f5fd0; --cal3:#4f86f7; --cal4:#9dc0fb;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text);padding:24px;font-size:14px;transition:background .2s,color .2s}
+h1{font-size:20px;margin-bottom:2px;display:flex;align-items:center;gap:10px}
+.head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.nav{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;flex-shrink:0}
+.nav a{color:var(--accent);text-decoration:none;font-size:13px;border:1px solid var(--border);
+  border-radius:8px;padding:7px 13px;background:var(--card);white-space:nowrap}
+.nav a:hover{border-color:var(--accent)}
+/* the page you are on: filled like an active filter chip, because a WKWebView
+   focuses the first link on load and an outline must not read as "current" */
+.nav .on{color:var(--chip-on-text);background:var(--chip-on);border:1px solid var(--chip-on);
+  border-radius:8px;padding:7px 13px;font-size:13px;font-weight:600;white-space:nowrap;cursor:default}
+.sub{color:var(--muted);font-size:12px;margin-bottom:16px}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--teal);display:inline-block}
+.dot.off{background:#9ca3af}
+.toolbar{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:16px;display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end}
+.fg{display:flex;flex-direction:column;gap:5px}
+.fg label{font-size:11px;color:var(--muted);font-weight:600}
+/* (control styling lives in one place further down — this rule used the
+   `background` shorthand, which wiped the custom select chevron) */
+.chips{display:flex;gap:6px}
+.chip{border:1px solid var(--border);border-radius:16px;padding:5px 12px;font-size:12px;cursor:pointer;background:var(--card);user-select:none}
+.chip.on{background:var(--chip-on);color:var(--chip-on-text);border-color:var(--chip-on)}
+.chip.agent0.on{background:var(--blue);border-color:var(--blue)}
+.chip.agent1.on{background:var(--orange);border-color:var(--orange)}
+.chip.agent2.on{background:var(--green,#16a34a);border-color:#16a34a}
+.chip.agent3.on{background:#8c5cf5;border-color:#8c5cf5}
+.chip.agent4.on{background:#e64d8b;border-color:#e64d8b}
+.chip.agent5.on{background:#33b3bf;border-color:#33b3bf}
+.chip.agent6.on{background:#d97706;border-color:#d97706}
+.chip.agent7.on{background:#e11d48;border-color:#e11d48}
+.chip.agent8.on{background:#4f46e5;border-color:#4f46e5}
+.chip.agent9.on{background:#65a30d;border-color:#65a30d}
+.models{display:flex;flex-wrap:wrap;gap:6px;max-width:560px}
+.mchip{border:1px solid var(--border);border-radius:14px;padding:4px 10px;font-size:11px;cursor:pointer;background:var(--card);user-select:none}
+.mchip.on{background:var(--purple);color:#fff;border-color:var(--purple)}
+.btn{border:1px solid var(--border);border-radius:8px;padding:7px 14px;font-size:13px;cursor:pointer;background:var(--card);color:var(--text)}
+.btn:hover{background:var(--card-2)}
+.btn:disabled{opacity:.6;cursor:default}
+/* segmented switch — same component as the settings page; the trend panel's
+   按天/按小时 was borrowing the class without the rules, so it rendered as two
+   bare browser buttons */
+.seg{display:inline-flex;border:1px solid var(--border);border-radius:9px;overflow:hidden;background:var(--card-2)}
+.seg button{border:none;background:transparent;color:var(--text);padding:5px 12px;font-size:12px;font-family:inherit;cursor:pointer}
+.seg button+button{border-left:1px solid var(--border)}
+.seg button.on{background:var(--chip-on);color:var(--chip-on-text)}
+.seg button:hover:not(.on){background:var(--card)}
+th.thsort:hover{color:var(--accent)}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:12px;margin-bottom:14px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 16px}
+.card .label{font-size:11px;color:var(--muted);margin-bottom:5px}
+.card .value{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums}
+.card .hint{font-size:10px;color:var(--muted);margin-top:3px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.panel{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px}
+.panel h2{font-size:13px;margin-bottom:10px}
+/* Full-width panels stack, so they need their own bottom gap. This used to be
+   an inline `style="margin-bottom:14px"` on each one, and the last three panels
+   — 支持列表 / 会话明细 / 调用记录 — were simply missing it: measured 0 px
+   between them against 14 px everywhere else (STATUS.md 61). One rule, and the
+   next panel anyone adds cannot forget it. */
+.panel.wide{grid-column:1/-1;margin-bottom:14px}
+canvas{max-height:260px}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{text-align:left;color:var(--muted);font-weight:500;padding:7px 9px;border-bottom:1px solid var(--border);white-space:nowrap}
+td{padding:7px 9px;border-bottom:1px solid var(--row-border);font-variant-numeric:tabular-nums;white-space:nowrap;max-width:260px;overflow:hidden;text-overflow:ellipsis}
+.rate{color:var(--red);font-weight:600}
+.bars .row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.bars .name{width:200px;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bars .track{flex:1;height:14px;background:var(--track);border-radius:7px;overflow:hidden}
+.bars .fill{height:100%;border-radius:7px}
+.bars .val{width:140px;text-align:right;font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums;line-height:1.35}
+#status{font-size:11px;color:var(--muted)}
+.legend-note{font-size:11px;color:var(--muted);margin-top:6px}
+/* ---- activity calendar ----
+   GitHub's contribution graph, drawn as SVG instead of 371 divs: one square per
+   day for the last 12 months, shade = that day's 输入 + 输出. It scrolls
+   sideways on a narrow window rather than shrinking the squares — a 5 pt square
+   tells you nothing, and the scroll position starts at "now" either way. */
+.cal{overflow-x:auto;margin:2px 0 8px}
+.cal svg{display:block}
+.cal rect{fill:var(--cal0)}
+.cal rect.l1{fill:var(--cal1)}
+.cal rect.l2{fill:var(--cal2)}
+.cal rect.l3{fill:var(--cal3)}
+.cal rect.l4{fill:var(--cal4)}
+.cal text{font-size:9px;fill:var(--muted)}
+.cal-legend{display:flex;align-items:center;gap:4px;justify-content:flex-end;font-size:10px;color:var(--muted)}
+.cal-legend i{width:11px;height:11px;border-radius:2.5px;background:var(--cal0)}
+.cal-legend i.l1{background:var(--cal1)}
+.cal-legend i.l2{background:var(--cal2)}
+.cal-legend i.l3{background:var(--cal3)}
+.cal-legend i.l4{background:var(--cal4)}
+.pulsedot{width:10px;height:10px;border-radius:50%;background:#9ca3af;display:inline-block}
+.pulsedot.hot{background:#dc2626;animation:pulse 1s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(220,38,38,.5)}70%{box-shadow:0 0 0 8px rgba(220,38,38,0)}100%{box-shadow:0 0 0 0 rgba(220,38,38,0)}}
+.src-row{display:flex;justify-content:space-between;align-items:center;font-size:12px;padding:5px 0;border-bottom:1px solid #f1f2f4}
+.src-row:last-of-type{border-bottom:none}
+.src-row .n{font-weight:600}
+.src-row .c{color:var(--muted);font-variant-numeric:tabular-nums}
+.src-row .zero{color:#d1d5db}
+.hint{font-size:11px;color:var(--muted);margin-top:8px;line-height:1.5}
+/* ---- form controls ----
+   The native popups and date fields were the last places this page fell back to
+   the system look: a square grey popup and a boxed date field sitting next to
+   rounded cards, with a different border and font from everything else. One
+   rule for all of them, and the chevron is drawn in CSS so the control does not
+   change shape when the OS look changes. */
+select, input[type=date], input[type=text], input[type=search]{
+  font-family:inherit;font-size:12px;line-height:1.5;color:var(--text);
+  background:var(--card);border:1px solid var(--border);border-radius:8px;
+  padding:4px 9px;height:28px;
+}
+/* only the popup loses its native skin — a date field keeps its calendar
+   button, which `appearance:none` would take away with the rest */
+select{appearance:none;-webkit-appearance:none}
+select{
+  padding-right:26px;
+  background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%236b7280' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 9px center;background-size:10px 6px;
+}
+html[data-theme="dark"] select{
+  background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%239aa0a6' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
+}
+select:focus, input:focus-visible, button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+input[type=date]{min-width:132px}
+input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;vertical-align:-2px}
+</style>
+</head>
+<body data-page-node-id="riCglG9adLycW8vBGuXpPW">
+<div class="head">
+  <div>
+    <h1 data-page-node-id="QQDMAG24MNzau1RflZPtU4"><span data-i18n="h1">Token 用量中心</span> <span class="dot" id="liveDot" data-page-node-id="xOpfbrRCSKzkrqvm8cFytv"></span></h1>
+    <div class="sub" id="status" style="margin-bottom:0" data-page-node-id="jHSWglvOIKGKu5pbbLC1XI">加载中…</div>
+  </div>
+  <nav class="nav">
+    <span class="on" data-i18n="nav_home">主页</span>
+    <a href="/sources" data-i18n="nav_sources">数据源</a>
+    <a href="/settings" id="settingsLink" data-i18n="nav_settings">设置</a>
+    <a href="/about" data-i18n="nav_about">关于</a>
+  </nav>
+</div>
+<div style="height:16px"></div>
+
+<div class="panel wide" style="margin-bottom:14px;border-color:#dc262633" data-page-node-id="zxQbxjnX9viTUKqLxTcR8o">
+  <!-- This panel sits above the filter bar on purpose: it reads /api/live — the
+       live burn rate and today's total — and none of it goes through the filters
+       below (date range, sources, models, project). Leaving it under the toolbar
+       implied it was filtered. -->
+  <h2 style="display:flex;align-items:center;gap:8px;flex-wrap:wrap" data-page-node-id="eF26GBWHllEegnSzcovdR7"><span class="pulsedot" id="burnDot" data-page-node-id="p7oHpug2ssvtcFCOrQujgt"></span><span data-i18n="burn_title">实时燃烧监控</span> <span style="font-weight:400;color:var(--muted);font-size:11px" data-i18n="burn_sub" data-page-node-id="b1pxWwLCMiLwhiudOEFFJS">输入 + 输出 · 每秒刷新</span></h2>
+  <div style="display:flex;gap:24px;align-items:center;flex-wrap:wrap" data-page-node-id="UZmfaWc8tur54uKsoWpPv2">
+    <div data-page-node-id="e1FfdAVRpQ5iidcvswoFPQ">
+      <div id="burnBig" style="font-size:34px;font-weight:700;font-variant-numeric:tabular-nums;color:#9ca3af" data-page-node-id="GvEMiCL7eT55CZDRwlsZTP">0</div>
+      <div style="font-size:11px;color:var(--muted)" data-i18n="burn_unit" data-page-node-id="AtonnjbFDBWrYe6aYTmTKI">tokens / min（近 60 秒）</div>
+    </div>
+    <div style="border-left:1px solid var(--border);padding-left:24px;min-width:230px" data-page-node-id="wv4Vztu7dDsHdXNHVVGIPL">
+      <div style="font-size:11px;color:var(--muted);margin-bottom:2px" data-i18n="burn_today" data-page-node-id="bKFE0RPCcoCAEqbVKBKFDg">今日 TOKEN 总量（输入 + 输出）</div>
+      <div id="todayBurn" style="font-size:26px;font-weight:700;font-variant-numeric:tabular-nums;color:#9ca3af" data-page-node-id="Rfp4WVzPNdzfOFQT9Xbw6Q">0</div>
+      <div id="todayDetail" style="font-size:11px;color:var(--muted);margin-top:3px" data-page-node-id="jiyoCbTAKfolyoJvMXFl71">输入 - · 输出 - · 命中率 -</div>
+    </div>
+    <div style="flex:1;min-width:280px" data-page-node-id="9CEVAdkGNvpQ75LzA3Me6L"><canvas id="chBurn" height="70" data-page-node-id="Qo36w6Ae2fuXRre9s9KI1j"></canvas></div>
+    <div id="burnStatus" style="font-size:12px;color:var(--muted);min-width:150px" data-page-node-id="trDFGM1jlgEQlDcquPr1P6">待机</div>
+  </div>
+</div>
+
+<div class="toolbar" data-page-node-id="FlCQD8PcwAlaUb741eWcWN">
+  <div class="fg" data-page-node-id="peYzygRCI69UiXo3y13qXB"><label data-i18n="quick_range" data-page-node-id="90un2BFuESEAhtEAyIsMqU">快速区间</label>
+    <div class="chips" id="presets" data-page-node-id="aQkSAopgI47HpJ2HqZyE0m">
+      <div class="chip on" data-d="0" data-i18n="preset_all" data-page-node-id="nETHu5s2AV9KTMZXnHTJFs">全部</div>
+      <div class="chip" data-d="1" data-i18n="preset_today" data-page-node-id="Owr3YuuUN6k0Pqt77XAAIl">今天</div>
+      <div class="chip" data-d="7" data-i18n="preset_7d" data-page-node-id="Fx1cKibEkT5JiNpjK5PA5w">近 7 天</div>
+      <div class="chip" data-d="30" data-i18n="preset_30d" data-page-node-id="HCE1amiQXmN9z10neFGJ62">近 30 天</div>
+    </div>
+  </div>
+  <div class="fg" data-page-node-id="FGvatEUyH7iUyKJna8U6ln"><label data-i18n="custom_range" data-page-node-id="O7x9LRwi5acWpRbH0D38Vw">自定义区间</label>
+    <div style="display:flex;gap:6px;align-items:center" data-page-node-id="bynLIFjXS4trCBvudn69AE">
+      <input type="date" id="dFrom" data-page-node-id="Hw4EFZHTX8ffoEzfSSKLKM"> <span style="color:var(--muted)" data-page-node-id="yPT2RRjjAl9bBt1DGNG7LE">→</span> <input type="date" id="dTo" data-page-node-id="eEDQkv5VvPeV70vr6kGa37">
+    </div>
+  </div>
+  <div class="fg" data-page-node-id="RqTaowfoVomGGGXQHGV0ip"><label data-i18n="data_source" data-page-node-id="9ECJ8JfjMyQUhaqSYisNiw">数据源</label>
+    <div class="chips" id="agentChips" data-page-node-id="Ey2ggIbZCXFhQZVHrYGXZv"></div>
+  </div>
+  <div class="fg" data-page-node-id="x91yD1zulnkV4AiyhTXjCs"><label data-i18n="model_label" data-page-node-id="Thfei744NWmkhIaCDK3JBV">模型</label><div class="models" id="modelChips" data-page-node-id="HllolGgnZYdZ8X7v2emqPd"></div></div>
+  <div class="fg" data-page-node-id="gH1mBX6g0AImyChdfrI92a"><label data-i18n="project_label" data-page-node-id="uNscShJiwmJesQaLBCePuK">项目</label><select id="projSel" data-page-node-id="XSrSgSLXxpU57DA4WACEw6"><option value="" data-i18n="all_projects" data-page-node-id="RFLSaAEGzsAflGhImTVumy">全部项目</option></select></div>
+  <div class="fg" data-page-node-id="TWDvuUjr4feXd3WywfB0wX"><label data-page-node-id="zb2W0ACk6pRmlBTUUmpvwP">&nbsp;</label><button class="btn" id="refreshBtn" data-i18n="refresh" data-page-node-id="N9wDm8Ejbh3SMxvXA5VOEk">刷新数据</button></div>
+</div>
+
+
+<div class="panel wide" style="margin-bottom:14px">
+  <!-- GitHub's contribution graph. It sits directly under the filter bar because
+       it answers "when did I work" for the whole year, which is the context every
+       panel below reads against — the trend chart can only ever show 45 days.
+       Kind of filter it honours: see matchSMP() — sources / models / project, but
+       deliberately *not* the date range, since the calendar is itself the
+       when-question; narrowing it by "today" would leave one lit square. -->
+  <h2 style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+    <span data-i18n="cal_title">活动记录</span>
+    <span style="font-weight:400;color:var(--muted);font-size:11px" id="calTotal" title=""></span>
+    <span style="font-weight:400;color:var(--muted);font-size:11px" data-i18n="cal_sub">近一年 · 输入 + 输出 · 不受日期区间影响</span>
+  </h2>
+  <div class="cal" id="calBox"></div>
+  <div class="cal-legend">
+    <span data-i18n="cal_less">少</span><i></i><i class="l1"></i><i class="l2"></i><i class="l3"></i><i class="l4"></i><span data-i18n="cal_more">多</span>
+  </div>
+</div>
+
+<div class="panel wide" style="margin-bottom:14px" data-page-node-id="xQHrDn7lXu5q62YFNKvSlt">
+  <h2 style="display:flex;align-items:center;gap:10px" data-page-node-id="Cxh3FLTr1sAAYQanmfCQT2"><span data-i18n="dur_title">时长与闲置分析</span>
+    <select id="durDim" data-page-node-id="TW5SID1cAFXsnEvSJCbgYu">
+      <option value="a" data-i18n="dim_a" data-page-node-id="hsYg6oXjffYhabFd5v87fV">按 Agent</option>
+      <option value="m" data-i18n="dim_m" data-page-node-id="fRnSpPMHfbmRWC8KQj0eMe">按模型</option>
+      <option value="p" data-i18n="dim_p" data-page-node-id="PAiahKCTNTMCIetcFGrP5T">按项目</option>
+    </select>
+    <span style="font-weight:400;color:var(--muted);font-size:11px" data-i18n="dur_note" data-page-node-id="piwY8v6GcRA7LgNRK32KLc">活跃时长 = 相邻调用间隔 ≤5 分钟的时间跨度累加 · 默认最久未用的排最前</span>
+  </h2>
+  <table style="font-size:12px" data-page-node-id="bdGEe58LMl1wBE1dj1M7ot">
+    <thead data-page-node-id="5IUfSpzw6UkG8KT83lpa4G"><tr data-page-node-id="YC9tjKmGcGgzs8BFpAXdDk"><th data-i18n="th_obj" data-page-node-id="dpB7gxHMGkanYNGD9qyUz7">对象</th><th data-i18n="th_calls" data-page-node-id="pgBnanwQjEFw3U1mutlM22">调用</th><th data-i18n="th_sessions" data-page-node-id="NFcrFJXF8qoOqryV1adATF">活跃会话</th><th data-i18n="th_dur" data-page-node-id="bmAECouFaVH5P5SqEteVff">累计活跃时长</th><th data-i18n="th_last" data-page-node-id="4wdMDLIxJdSdRjlQ8VNKkB">最后活动</th><th data-i18n="th_status" data-page-node-id="sJCQU8v5PoWR3Ghzpt74dI">状态</th></tr></thead>
+    <tbody id="durBody" data-page-node-id="jc3zSqf1sudbEsO4v9Nk9O"></tbody>
+  </table>
+</div>
+
+<div class="panel wide" style="margin-bottom:14px" data-page-node-id="Tyml4MjaXQwnhUf6Isxcgn">
+  <h2 data-page-node-id="ZSZDsmH2OoxLe5lBuCxyBA"><span data-i18n="lb_title">🌍 全球燃烧者排行榜</span> <span style="font-weight:400;color:var(--muted);font-size:11px" data-i18n="lb_sub" data-page-node-id="F5EDLlx3C4HGcgNlDMGMjM">匿名 · 只上传当日燃烧总量 · 默认关闭需手动加入</span></h2>
+  <div id="lbOptIn" style="display:flex;gap:12px;align-items:center;margin-bottom:10px;font-size:13px" data-page-node-id="qGfylC0fhD6tzBGQ4b39IX">
+    <label style="display:flex;gap:6px;align-items:center;cursor:pointer" data-page-node-id="UghEq0uL5ezTTugNIdRSp3"><input type="checkbox" id="lbCheck" data-page-node-id="AZLfh0a1IyYGkAFsYpVgrE"><span data-i18n="lb_join"> 参与全球排名</span></label>
+    <input id="lbName" type="text" data-i18n-ph="lb_nick_ph" placeholder="你的昵称" style="width:150px" data-page-node-id="3ARV4bJw7QQdHNg7FKDWcn">
+    <span style="color:var(--muted);font-size:11px" id="lbSync" data-i18n="lb_not_synced" data-page-node-id="0CTGMlY9GRgZomUExi5MKS">未同步</span>
+  </div>
+  <!-- 只显示"我在全球第几名"：完整榜单在控制台（需要登录），公开页不给别人看 -->
+  <div id="lbBody" style="display:none" data-page-node-id="vUBdBVdFKcCZcCIDcOKpER">
+    <div class="chips" id="lbRanges" style="margin-bottom:10px" data-page-node-id="lbRangesRow">
+      <div class="chip" data-d="0" data-i18n="preset_all">全部</div>
+      <div class="chip" data-d="1" data-i18n="preset_today">今天</div>
+      <div class="chip on" data-d="7" data-i18n="preset_7d">近 7 天</div>
+      <div class="chip" data-d="30" data-i18n="preset_30d">近 30 天</div>
+    </div>
+    <div id="lbMe" style="font-size:15px;font-weight:600;margin-bottom:6px;color:var(--purple)" data-page-node-id="SkduPPaIqdGaqIDz8ageSW"></div>
+    <div id="lbDetail" style="font-size:11px;color:var(--muted)" data-page-node-id="lbDetail"></div>
+  </div>
+</div>
+
+<div class="cards" data-page-node-id="kRANFNyoxCgMZBvxaVTgej">
+  <div class="card" data-page-node-id="air4HAMzfvz25uyvGwkYUO"><div class="label" data-i18n="card_req" data-page-node-id="pMr1gN15jodHcBqnoCvSUp">调用次数</div><div class="value" id="c-req" data-page-node-id="MA9cxIIQBiUsXYQvHzGaMB"></div></div>
+  <div class="card" data-page-node-id="GOt71NyESNIhhSBEggKXlq"><div class="label" data-i18n="card_in" data-page-node-id="pLLdu8Vj1YKBeeWFt7h5Cp">输入 tokens</div><div class="value" id="c-in" data-page-node-id="KGILIlQeah2bbsbgAJwUtx"></div></div>
+  <div class="card" data-page-node-id="3epEFPGxACyYltNLsC64UD"><div class="label" data-i18n="card_out" data-page-node-id="NL6JtOH7FKHQu9uBejblgl">输出 tokens</div><div class="value" id="c-out" data-page-node-id="ZMLAgw0jD9HLNClUkrleP9"></div></div>
+  <div class="card" data-page-node-id="bWJj8kQk5iJRpHTksBcBsI"><div class="label" data-i18n="card_cache" data-page-node-id="TYmLXGzjEw6REMNFKsLWfT">缓存命中 tokens</div><div class="value" id="c-cache" data-page-node-id="fFWe8OFYF3rwWzzlO0mFoY"></div></div>
+  <div class="card" data-page-node-id="j0u5TcJ16PaHYjUxT8iKwP"><div class="label" data-i18n="card_rate" data-page-node-id="bzh8QU0PGOOPnH3exOfHXu">缓存命中率</div><div class="value rate" id="c-rate" data-page-node-id="u5UHcM3gP6lZF30W1F1Gbx"></div></div>
+  <div class="card" data-page-node-id="9Gaeff28FTfPe8Iogy90IA"><div class="label" data-i18n="card_ratio" data-page-node-id="NUKLepha0qXe6RVBALeL2z">输出/输入 比</div><div class="value" id="c-ratio" data-page-node-id="U0Osb4ADtavsIAdtVvvmpv"></div><div class="hint" data-i18n="card_ratio_hint" data-page-node-id="HEMcdjU99EUbN0Yr6irzEE">每 100 输入产出多少输出</div></div>
+</div>
+
+<div class="grid" data-page-node-id="XAoGA6R45AxCIn68vDVudf">
+  <div class="panel">
+    <h2 style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <span data-i18n="trend_title">用量趋势</span>
+      <span style="font-weight:400;color:var(--muted);font-size:11px" data-i18n="trend_sub">输入 + 输出（拆分在悬停提示与表格里）</span>
+      <span style="flex:1"></span>
+      <span class="seg" id="trendSeg" style="font-size:12px">
+        <button data-v="day" class="on" data-i18n="trend_by_day">按天</button>
+        <button data-v="hour" data-i18n="trend_by_hour">按小时</button>
+      </span>
+      <!-- 输入比输出大 3–4 个数量级（本机 87 亿 vs 1833 万）。堆叠在一张图里，
+           输出就是贴着轴的一条线。两个纵轴：左轴输入、右轴输出（轴刻度按系列上色），
+           一张图、并排两根柱子，各读各的刻度。 -->
+      <select id="trendDay" style="display:none"></select>
+    </h2>
+    <canvas id="chTrend"></canvas>
+  </div>
+  <div class="panel" data-page-node-id="EgomwJY2BtDFH5kZYEfarW"><h2 data-i18n="ch_rate" data-page-node-id="CzvDsjnQpTimUC6Uh4S0JR">每日缓存命中率 %</h2><canvas id="chRate" data-page-node-id="ZyriCGIjV1iyX2wc2FHFrI"></canvas></div>
+</div>
+<div class="grid" data-page-node-id="GNSBlgQafCEaZi7U1uirc7">
+  <div class="panel" data-page-node-id="O2Yz5VdIdhZ9KHCbw2542P"><h2 data-page-node-id="6uVkZPhCA5YsvnFCnTnPHh"><span data-i18n="ch_model">按模型</span> · <span data-i18n="metric_total">输入 + 输出</span></h2><div class="bars" id="modelBars" data-page-node-id="5AqNJcPwGDEuvFw6e60yLF"></div></div>
+  <div class="panel" data-page-node-id="qxMJQuFzf6feIEUyyWIvLs"><h2 data-page-node-id="KDWvrABTYX9FL1XmGIdWqe"><span data-i18n="ch_proj">按项目 Top 10</span> · <span data-i18n="metric_total">输入 + 输出</span></h2><div class="bars" id="projBars" data-page-node-id="4ARPmxsARsyOtSIRZ1O8Er"></div></div>
+</div>
+<div class="grid" data-page-node-id="n36kQUrRUdpOd1CTImMP61">
+  <div class="panel" data-page-node-id="sFyy9uJzz3lzOWdcFyYDyA"><h2 data-i18n="ch_hour" data-page-node-id="SrqJ3ju1pG2qAUfRjEnDtn">调用时段分布（小时 × 调用次数）</h2><canvas id="chHour" data-page-node-id="6mcwFTnm5GFFzTfUTEIJ5k"></canvas></div>
+  <!-- 这张图原来把「调用次数」（2.2 万）和「输入/输出 token」（88 亿 / 1844 万）
+       画在同一个线性轴上：不只输出看不见，调用次数也一样。现在按源并排两根柱子：
+       实心 = 输入（读左轴），半透明 = 输出（读右轴）；调用次数在上一张表的「调用」列。 -->
+  <div class="panel" data-page-node-id="KLUGBd80DLTEKK2pNYyIEx"><h2 data-page-node-id="9WMVumsYg06N3EBz5xFVmx"><span data-i18n="ch_agent">数据源对比</span></h2><canvas id="chAgent" data-page-node-id="qHIo17Wdsg7H1X3GNvZ6GH"></canvas><div class="legend-note" data-i18n="legend_note" data-page-node-id="miU61Qv1xwvOzN04ltKki0">WorkBuddy = 平台内置模型调用 · Codex = Codex CLI/Desktop 会话</div></div>
+</div>
+
+<div class="panel wide" data-page-node-id="O7p1G2gJmqcEFhNivyhgFC"><h2 data-page-node-id="wwIIVUl4nY8RFzfF8NB0zF"><span data-i18n="sup_title">✅ 支持列表</span> <span style="font-weight:400;color:var(--muted);font-size:11px" data-i18n="sup_sub" data-page-node-id="eywvzSU2lCuTX5Xtch6oX1">只显示本机真正统计到用量的数据源</span> <a href="/sources" style="float:right;color:var(--accent);text-decoration:none;font-size:12px" data-i18n="src_detail">数据源详情 →</a></h2>
+<table data-page-node-id="YHXH6W1ugjVv14l1MdEBo5">
+<!-- 没有「类型」列：CLI / GUI 是写死的标签，而且对自动发现的源会退化成"自动发现"
+     ——那是来源不是类型。程序无法可靠判断一个工具是 CLI 还是 GUI，所以这一列删掉，
+     只留能实测的四列。 -->
+<thead data-page-node-id="1t4HAM9Fl9pdLZ5hmZ3NcA"><tr data-page-node-id="xwPXoU1gRVEguVpsmlvJMI"><th data-i18n="sup_prod" data-page-node-id="6qNLGiP7O7UQunD3N58Mmu">产品</th><th data-i18n="sup_src" data-page-node-id="G1VOHYgpUn40RMpT3sMNdm">数据源</th><th data-i18n="sup_local" data-page-node-id="6qNLGiP7O7UQunD3N58Mmt">本机</th><th data-i18n="sup_note" data-page-node-id="i20w02D9dkSFY6dN6Is3nV">说明</th></tr></thead>
+<tbody id="supBody" data-page-node-id="V7VEcSKGzJBSDaIidoQwyr"></tbody>
+</table>
+</div>
+
+<div class="panel wide" data-page-node-id="FnjNYMOcUaMXH1Qthw7pBM"><h2 data-i18n="sess_title" data-page-node-id="5a0EjxjfKS46PTZMWHyCw5">会话明细（按输入 tokens 排序，最多 40 条）</h2>
+<table data-page-node-id="S2v6OkWWo2AYIaE1fzHkTp">
+<thead data-page-node-id="YDmObSG4mPUP25O9eFSZsT"><tr data-page-node-id="1LWJSV5iI9hKSaVy1KiAjj"><th data-i18n="sess_src" data-page-node-id="NdftFb4awS5BZHutUrMU3U">数据源</th><th data-i18n="sess_sess" data-page-node-id="dYFOCDGKzCRTDqM30FZtPr">会话</th><th data-i18n="sess_proj" data-page-node-id="xZgh2AQI1KftryaX1xxjlS">项目</th><th data-i18n="sess_calls" data-page-node-id="R0YksahNDwf7XWfRRXihRv">调用</th><th data-i18n="sess_in" data-page-node-id="NIaRk3Gc0DExG0m5JZypCB">输入</th><th data-i18n="sess_out" data-page-node-id="Hx6JiX4Jo5GRLIK6CdStJd">输出</th><th data-i18n="sess_cache" data-page-node-id="TDWGTfdZ1QOAxkqUNHRNqz">缓存命中</th><th data-i18n="sess_rate" data-page-node-id="24tFsvhyixQcTXOCQZw9CN">命中率</th><th data-i18n="sess_time" data-page-node-id="AAaM6GfOiZnRNrT0v3iBX2">首末时间</th></tr></thead>
+<tbody id="sessBody" data-page-node-id="5GARfKvY76JmP9RoiIyGlO"></tbody>
+</table>
+<div style="display:flex;gap:10px;align-items:center;margin-top:10px;font-size:12px;flex-wrap:wrap">
+    <span id="sessTotal" style="color:var(--muted)"></span>
+    <span style="flex:1"></span>
+    <label style="color:var(--muted);display:flex;gap:5px;align-items:center">
+      <span data-i18n="rec_size">每页</span>
+      <select id="sessSize">
+        <option value="10" selected>10</option><option value="25">25</option><option value="50">50</option>
+      </select>
+    </label>
+    <button class="btn" id="sessFirst" data-i18n="rec_first">首页</button>
+    <button class="btn" id="sessPrev" data-i18n="rec_prev">上一页</button>
+    <span id="sessPage" style="color:var(--muted);min-width:96px;text-align:center"></span>
+    <button class="btn" id="sessNext" data-i18n="rec_next">下一页</button>
+    <button class="btn" id="sessLast" data-i18n="rec_last">末页</button>
+  </div>
+</div>
+
+<div class="panel wide">
+  <h2><span data-i18n="rec_title">调用记录</span></h2>
+  <div style="display:flex;gap:10px;align-items:center;margin-bottom:10px;font-size:12px;flex-wrap:wrap">
+    <span id="recTotal" style="color:var(--muted)"></span>
+    <span style="flex:1"></span>
+    <label style="color:var(--muted);display:flex;gap:5px;align-items:center">
+      <span data-i18n="rec_size">每页</span>
+      <select id="recSize">
+        <option value="10" selected>10</option><option value="25">25</option>
+        <option value="50">50</option><option value="100">100</option>
+      </select>
+    </label>
+    <button class="btn" id="recFirst" data-i18n="rec_first">首页</button>
+    <button class="btn" id="recPrev" data-i18n="rec_prev">上一页</button>
+    <span id="recPage" style="color:var(--muted);min-width:96px;text-align:center"></span>
+    <button class="btn" id="recNext" data-i18n="rec_next">下一页</button>
+    <button class="btn" id="recLast" data-i18n="rec_last">末页</button>
+  </div>
+  <table style="font-size:12px">
+    <thead><tr>
+      <th class="thsort" data-k="t" style="cursor:pointer;user-select:none"><span data-i18n="rec_time">时间</span><span id="arw_t"></span></th>
+      <th data-i18n="sess_src">数据源</th>
+      <th data-i18n="model_label">模型</th>
+      <th data-i18n="sess_proj">项目</th>
+      <th data-i18n="sess_sess">会话</th>
+      <th class="thsort" data-k="i" style="cursor:pointer;user-select:none;text-align:right"><span data-i18n="sess_in">输入</span><span id="arw_i"></span></th>
+      <th class="thsort" data-k="o" style="cursor:pointer;user-select:none;text-align:right"><span data-i18n="sess_out">输出</span><span id="arw_o"></span></th>
+      <th class="thsort" data-k="c" style="cursor:pointer;user-select:none;text-align:right"><span data-i18n="sess_cache">缓存命中</span><span id="arw_c"></span></th>
+      <th data-i18n="sess_rate" style="text-align:right">命中率</th>
+    </tr></thead>
+    <tbody id="recBody"></tbody>
+  </table>
+</div>
+
+<script>
+// The source list is owned by the server (its id order *is* the parser order) and
+// arrives with /api/data — this page must not keep its own copy, or a new source
+// would show up here as a blank name.
+const AGENT_NAMES = [];
+const AGENT_COLORS = ['#2563eb','#ea580c','#16a34a','#8c5cf5','#e64d8b','#33b3bf','#d97706','#e11d48','#4f46e5','#65a30d'];
+const agentColor = a => AGENT_COLORS[a % AGENT_COLORS.length];
+let ALL = [];          // all records
+let charts = {};
+let filters = {from:null, to:null, agents:new Set(), models:new Set(), proj:''};
+// Paged call log. Declared up here rather than beside its functions because
+// render() calls scheduleRecords(), and render() can run before the lower half
+// of this script has been evaluated.
+// 10 rows a page, same as the session table: the call log is read to spot what
+// just happened, not to page through. The selector still offers up to 100.
+const REC = {page:0, size:10, sort:'t', dir:'desc', total:0, sig:'', seq:0, timer:null};
+
+// ---- preferences (lang / theme) ----
+// Single source of truth is the server (/api/settings) so the menubar HUD and
+// this page can never drift apart; localStorage is only a first-paint cache.
+let PREFS = {lang:'sys', theme:'auto'};
+try { const c = localStorage.getItem('tb_prefs'); if (c) PREFS = JSON.parse(c); } catch(e){}
+const sysLang = () => (navigator.language || 'zh').toLowerCase().startsWith('zh') ? 'zh' : 'en';
+const sysTheme = () => matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+const resolvedLang = () => PREFS.lang === 'sys' ? sysLang() : PREFS.lang;
+const resolvedTheme = () => PREFS.theme === 'auto' ? sysTheme() : PREFS.theme;
+let LANG = resolvedLang();
+function applyTheme(){ document.documentElement.dataset.theme = resolvedTheme(); }
+applyTheme();
+const I18N = {
+zh:{
+ nav_home:'主页', nav_sources:'数据源', nav_settings:'设置', nav_about:'关于',
+ doc_title:'TokenDance · Token 用量仪表盘', h1:'Token 用量中心', loading:'加载中…',
+ quick_range:'快速区间', preset_all:'全部', preset_today:'今天', preset_7d:'近 7 天', preset_30d:'近 30 天',
+ custom_range:'自定义区间', data_source:'数据源', model_label:'模型', project_label:'项目', all_projects:'全部项目', refresh:'刷新数据',
+ refresh_ing:'刷新中…', refresh_done:'已刷新 ✓', refresh_more:'已刷新 · +%d 条',
+ burn_title:'实时燃烧监控', burn_sub:'输入 + 输出 · 每秒刷新', burn_unit:'tokens / min（近 60 秒）',
+ burn_today:'今日 TOKEN 总量（输入 + 输出）',
+ dur_title:'时长与闲置分析', dim_a:'按 Agent', dim_m:'按模型', dim_p:'按项目',
+ dur_note:'活跃时长 = 相邻调用间隔 ≤5 分钟的时间跨度累加 · 默认最久未用的排最前',
+ th_obj:'对象', th_calls:'调用', th_sessions:'活跃会话', th_dur:'累计活跃时长', th_last:'最后活动', th_status:'状态',
+ lb_title:'🌍 全球燃烧者排行榜', lb_sub:'匿名 · 只上传每日总用量（输入 + 输出）· 默认关闭需手动加入 · 只显示你自己的名次',
+ lb_join:' 参与全球排名', lb_nick_ph:'你的昵称', lb_not_synced:'未同步', lb_not_joined:'未参与', lb_synced:'已同步 ',
+ lb_unreachable:'排行榜服务不可达',
+ lb_me:'🌍 全球第 %R / %T 位 · 击败 %P% 的燃烧者',
+ lb_detail:'范围 %G · 你的用量 %B tokens · 参与人数 %T（完整榜单只在后台控制台可见）',
+ card_req:'调用次数', card_in:'输入 tokens', card_out:'输出 tokens', card_cache:'缓存命中 tokens', card_rate:'缓存命中率',
+ card_ratio:'输出/输入 比', card_ratio_hint:'每 100 输入产出多少输出',
+ trend_title:'用量趋势', trend_sub:'输入 + 输出（拆分在悬停提示与表格里）', trend_by_day:'按天', trend_by_hour:'按小时',
+ cal_title:'活动记录', cal_sub:'近一年 · 输入 + 输出 · 不受日期区间影响',
+ cal_less:'少', cal_more:'多', cal_dow:'一,三,五', cal_days_unit:' 天有活动',
+ ch_rate:'每日缓存命中率 %', ch_model:'按模型',
+ ch_proj:'按项目 Top 10', ch_hour:'调用时段分布（小时 × 调用次数）', ch_agent:'数据源对比',
+ legend_note:'WorkBuddy = 平台内置模型调用 · Codex = Codex CLI/Desktop 会话',
+ sup_title:'✅ 支持列表', sup_sub:'只显示本机真正统计到用量的数据源', src_detail:'数据源详情 →',
+ sup_local:'本机', loc_records:'条',
+ sup_prod:'产品', sup_src:'数据源', sup_note:'说明',
+ sup_empty:'本机还没有任何数据源产生用量 · 运行 AI 编码工具后会自动出现在这里',
+ sup_sessions:' 个会话', sup_files:' 个文件',
+ sup_hit:'缓存命中', sup_unparsed:'口径未确认（不计入）', sup_auto:'自动发现', sup_manual:'手动添加',
+ sess_title:'会话明细（按输入 tokens 排序）', sess_total:'共 %N 个会话', sess_src:'数据源', sess_sess:'会话', sess_proj:'项目',
+ sess_calls:'调用', sess_in:'输入', sess_out:'输出', sess_cache:'缓存命中', sess_rate:'命中率', sess_time:'首末时间',
+ rec_title:'调用记录', rec_time:'时间', rec_size:'每页',
+ rec_first:'首页', rec_prev:'上一页', rec_next:'下一页', rec_last:'末页',
+ rec_page:'第 %P / %T 页', rec_total:'共 %N 条', rec_of:'（已按当前筛选）',
+ no_data:'当前筛选条件下无数据', none:'无数据', hit:'命中率%',
+ metric_in:'输入', metric_out:'输出', metric_total:'输入 + 输出', input_unit:' 输入', times:'次', hour_suffix:'时',
+ status_line:'更新于 %T · 共 %N 条调用记录',
+ load_fail:'加载失败：',
+ burn_active:'🔥 燃烧中 · %A 个 agent 活跃', burn_idle:'待机 · 引擎空转',
+ today_detail:'输入 %I · 输出 %O · 命中率 %R% · %N 次调用',
+ dur_lt1:'<1 分钟', dur_min:' 分钟', dur_hour:' 小时', ago_now:'刚刚', ago_min:' 分钟前', ago_hour:' 小时前', ago_day:' 天前',
+ badge_active:'活跃中', badge_1h:'1 小时内', badge_24h:'24 小时内', badge_idle:'闲置 %D 天'
+},
+en:{
+ nav_home:'Home', nav_sources:'Sources', nav_settings:'Settings', nav_about:'About',
+ doc_title:'TokenDance · Token Usage Dashboard', h1:'Token Usage Center', loading:'Loading…',
+ quick_range:'Quick range', preset_all:'All', preset_today:'Today', preset_7d:'Last 7d', preset_30d:'Last 30d',
+ custom_range:'Custom range', data_source:'Sources', model_label:'Models', project_label:'Project', all_projects:'All projects', refresh:'Refresh',
+ refresh_ing:'Refreshing…', refresh_done:'Refreshed ✓', refresh_more:'Refreshed · +%d rows',
+ burn_title:'Live burn monitor', burn_sub:'input + output · per-second', burn_unit:'tokens / min (last 60s)',
+ burn_today:"TODAY'S TOKENS (input + output)",
+ dur_title:'Duration & idle analysis', dim_a:'By agent', dim_m:'By model', dim_p:'By project',
+ dur_note:'Active time = spans with gaps ≤5 min · most idle first',
+ th_obj:'Object', th_calls:'Calls', th_sessions:'Sessions', th_dur:'Active time', th_last:'Last active', th_status:'Status',
+ lb_title:'🌍 Global burner leaderboard', lb_sub:'Anonymous · daily totals only (input + output) · opt-in · shows your own rank only',
+ lb_join:' Join global ranking', lb_nick_ph:'Your nickname', lb_not_synced:'Not synced', lb_not_joined:'Not joined', lb_synced:'Synced ',
+ lb_unreachable:'Leaderboard unreachable',
+ lb_me:'🌍 Global #%R / %T · beats %P% of burners',
+ lb_detail:'Range %G · your usage %B tokens · %T participants (the full board lives in the console)',
+ card_req:'Requests', card_in:'Input tokens', card_out:'Output tokens', card_cache:'Cache-hit tokens', card_rate:'Cache hit rate',
+ card_ratio:'Output/Input ratio', card_ratio_hint:'output per 100 input',
+ trend_title:'Usage trend', trend_sub:'input + output (the split lives in the tooltip and the tables)', trend_by_day:'By day', trend_by_hour:'By hour',
+ cal_title:'Activity', cal_sub:'last 12 months · input + output · not affected by the date range',
+ cal_less:'Less', cal_more:'More', cal_dow:'Mon,Wed,Fri', cal_days_unit:' days with activity',
+ ch_rate:'Daily cache hit rate %', ch_model:'By model',
+ ch_proj:'By project top 10', ch_hour:'Hourly call distribution', ch_agent:'Source comparison',
+ legend_note:'WorkBuddy = built-in platform calls · Codex = Codex CLI/Desktop sessions',
+ sup_title:'✅ Supported list', sup_sub:'only sources that actually produced usage on this Mac', src_detail:'Source details →',
+ sup_local:'On this Mac', loc_records:'records',
+ sup_prod:'Product', sup_src:'Source', sup_note:'Notes',
+ sup_empty:'No source on this Mac has produced usage yet — run an AI coding tool and it will show up here',
+ sup_sessions:' sessions', sup_files:' files',
+ sup_hit:'cache hit', sup_unparsed:'mapping unconfirmed (not counted)', sup_auto:'auto-discovered', sup_manual:'added by hand',
+ sess_title:'Sessions (sorted by input tokens)', sess_total:'%N sessions', sess_src:'Source', sess_sess:'Session', sess_proj:'Project',
+ sess_calls:'Calls', sess_in:'Input', sess_out:'Output', sess_cache:'Cache hit', sess_rate:'Hit rate', sess_time:'First~Last',
+ rec_title:'Call log', rec_time:'Time', rec_size:'Per page',
+ rec_first:'First', rec_prev:'Prev', rec_next:'Next', rec_last:'Last',
+ rec_page:'Page %P of %T', rec_total:'%N rows', rec_of:' (current filters)',
+ no_data:'No data under current filters', none:'No data', hit:'Hit rate %',
+ metric_in:'Input', metric_out:'Output', metric_total:'Input + output', input_unit:' input', times:' calls', hour_suffix:':00',
+ status_line:'updated %T · %N calls',
+ load_fail:'Load failed: ',
+ burn_active:'🔥 Burning · %A agents active', burn_idle:'Idle · engine coasting',
+ today_detail:'In %I · out %O · hit %R% · %N calls',
+ dur_lt1:'<1 min', dur_min:' min', dur_hour:' h', ago_now:'just now', ago_min:'m ago', ago_hour:'h ago', ago_day:'d ago',
+ badge_active:'Active', badge_1h:'within 1h', badge_24h:'within 24h', badge_idle:'idle %Dd'
+}
+};
+function t(k){ return (I18N[LANG]||{})[k] || I18N.zh[k] || k; }
+function tf(k, map){ let s = t(k); for (const key in (map||{})) s = s.split('%'+key).join(map[key]); return s; }
+function fmt(n){
+  if (LANG==='en') return n>=1e9 ? (n/1e9).toFixed(2)+'B' : n>=1e6 ? (n/1e6).toFixed(1)+'M' : n>=1e3 ? (n/1e3).toFixed(1)+'K' : String(n);
+  return n>=1e8 ? (n/1e8).toFixed(2)+'亿' : n>=1e4 ? (n/1e4).toFixed(1)+'万' : String(n);
+}
+let STATUS = {loaded:false, at:'', count:0};
+function statusLine(){ return tf('status_line',{T:STATUS.at, N:full(STATUS.count)}); }
+function applyI18n(){
+  document.documentElement.lang = LANG==='en' ? 'en' : 'zh-CN';
+  document.title = t('doc_title');
+  document.querySelectorAll('[data-i18n]').forEach(el=>el.textContent=t(el.dataset.i18n));
+  document.querySelectorAll('[data-i18n-ph]').forEach(el=>el.placeholder=t(el.dataset.i18nPh));
+  document.querySelectorAll('[data-i18n-title]').forEach(el=>el.title=t(el.dataset.i18nTitle));
+  const st = document.getElementById('status');
+  if (st) st.textContent = STATUS.loaded ? statusLine() : t('loading');
+}
+function applyPrefs(){
+  LANG = resolvedLang();
+  applyTheme();
+  try { localStorage.setItem('tb_prefs', JSON.stringify(PREFS)); } catch(e){}
+  applyI18n();
+  if (STATUS.loaded) { renderSupport(); render(); renderDur(); }
+}
+async function loadPrefs(){
+  try {
+    const r = await fetch('/api/settings', {cache:'no-store'});
+    const p = await r.json();
+    if (p.lang) PREFS.lang = p.lang;
+    if (p.theme) PREFS.theme = p.theme;
+  } catch(e){}
+  applyPrefs();
+}
+const full = n => (n||0).toLocaleString('en-US');
+const dstr = ms => { const d=new Date(ms); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); };
+const tstr = ms => { const d=new Date(ms); return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'); };
+// 「首末时间」used to render dstr() twice, i.e. two bare dates: a session that
+// ran for twenty minutes showed "2026-09-13 ~ 2026-09-13" and the clock times —
+// the only part that makes the column useful — were dropped.
+const spanStr = (a,b) => dstr(a)===dstr(b) ? dstr(a)+' '+tstr(a)+' ~ '+tstr(b)
+                                           : dstr(a)+' '+tstr(a)+' ~ '+dstr(b)+' '+tstr(b);
+// Session ids and project labels reach innerHTML, and project labels now come
+// from a real filesystem path, so escape them rather than trusting the contents.
+const esc = s => String(s).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+// A single instant, for the per-call log (spanStr is for a first~last range).
+const dtStr = ms => dstr(ms)+' '+tstr(ms);
+
+var lastRender = 0;
+function renderThrottled(){
+  const now = Date.now();
+  if (now - lastRender < 1500) { setTimeout(renderThrottled, 1600 - (now - lastRender)); return; }
+  lastRender = now;
+  render();
+}
+
+async function load(){
+  await loadPrefs();
+  document.getElementById('liveDot').classList.add('off');
+  try{
+    const r = await fetch('/api/data');
+    const d = await r.json();
+    ALL = d.records||[];
+    // id order comes with the data; the agent filter starts as "all"
+    if (Array.isArray(d.agents) && d.agents.length){
+      AGENT_NAMES.splice(0, AGENT_NAMES.length, ...d.agents);
+      if (!filters.agents.size) filters.agents = new Set(AGENT_NAMES.map((_,i)=>i));
+    }
+    STATUS.loaded = true; STATUS.at = d.generated_at; STATUS.count = ALL.length;
+    document.getElementById('status').textContent = statusLine();
+    buildModelChips(); buildAgentChips(); buildProjSel(); render(); renderSupport();
+    document.getElementById('liveDot').classList.remove('off');
+    openStream();
+  }catch(e){ document.getElementById('status').textContent = t('load_fail')+e; }
+}
+
+function openStream(){
+  if (window.streamES) window.streamES.close();
+  const es = new EventSource('/api/stream');
+  window.streamES = es;
+  es.onmessage = ev => {
+    try{
+      const d = JSON.parse(ev.data);
+      if (d.new && d.new.length){
+        ALL = ALL.concat(d.new);
+        // a source that starts producing mid-session needs its chip, otherwise
+        // its records would be in the totals but silently unfilterable
+        if (d.new.some(r => !document.querySelector('.chip[data-a="'+r.a+'"]'))) buildAgentChips();
+        document.getElementById('liveDot').classList.remove('off');
+        renderThrottled();
+      }
+    }catch(e){}
+  };
+  es.onerror = () => {
+    document.getElementById('liveDot').classList.add('off');
+    es.close(); window.streamES = null;
+    setTimeout(load, 3000);  // full resync on disconnect
+  };
+}
+
+function buildModelChips(){
+  const counts = {};
+  ALL.forEach(r=>counts[r.m]=(counts[r.m]||0)+r.i);
+  const models = Object.keys(counts).sort((a,b)=>counts[b]-counts[a]);
+  const box = document.getElementById('modelChips');
+  box.innerHTML = models.map(m=>'<div class="mchip on" data-m="'+m+'" title="'+fmt(counts[m])+t('input_unit')+'">'+m+'</div>').join('');
+  filters.models = new Set(models);
+  box.querySelectorAll('.mchip').forEach(el=>el.onclick=()=>{
+    const m=el.dataset.m;
+    if(filters.models.has(m)){filters.models.delete(m);el.classList.remove('on');}
+    else{filters.models.add(m);el.classList.add('on');}
+    render();
+  });
+}
+function buildProjSel(){
+  const projs = [...new Set(ALL.map(r=>r.p))].sort();
+  const sel = document.getElementById('projSel');
+  sel.innerHTML = '<option value="">'+t('all_projects')+'</option>'+projs.map(p=>'<option>'+p+'</option>').join('');
+  sel.value = filters.proj;   // preserve selection across language switches / rebuilds
+  sel.onchange = ()=>{filters.proj=sel.value; render();};
+}
+
+function filtered(){
+  return ALL.filter(r=>{
+    if(!matchSMP(r)) return false;
+    const day = dstr(r.t);
+    if(filters.from && day < filters.from) return false;
+    if(filters.to && day > filters.to) return false;
+    return true;
+  });
+}
+
+/// The half of the filter bar that says *what* counts — sources, models, project.
+///
+/// Split out because the activity calendar honours exactly these three and
+/// deliberately ignores the date range: the calendar *is* the when-question, so
+/// narrowing it to "today" would leave a single lit square. See renderCalendar.
+function matchSMP(r){
+  if(!filters.agents.has(r.a)) return false;
+  if(filters.models.size && !filters.models.has(r.m)) return false;
+  if(filters.proj && r.p!==filters.proj) return false;
+  return true;
+}
+
+function agg(rows){
+  const i=rows.reduce((s,r)=>s+r.i,0), o=rows.reduce((s,r)=>s+r.o,0), c=rows.reduce((s,r)=>s+r.c,0);
+  return {n:rows.length, i, o, c, rate: i? +(c/i*100).toFixed(1):0};
+}
+
+function mkChart(id, cfg){ if(charts[id]) charts[id].destroy(); charts[id]=new Chart(document.getElementById(id), cfg); }
+
+// ---- usage trend ----
+// The daily chart this replaces always showed one bar per day; the question
+// "which hours did *that* day burn in" needed a different view. Same canvas,
+// two granularities: 按天 (one bar per day of the range) and 按小时 (24 bars
+// inside one day, picked from the days the current filter actually has).
+let TREND = {mode:'day', day:null};
+
+function renderTrend(rows){
+  const days = {};
+  rows.forEach(r=>{const k=dstr(r.t); (days[k]=days[k]||[]).push(r);});
+  const dk = Object.keys(days).sort();
+
+  // the day picker is rebuilt only when the set of days changes, so a poll that
+  // adds records to the same day does not reset the reader's choice
+  const sel = document.getElementById('trendDay');
+  const want = dk.slice().reverse();
+  if (!TREND.day || !days[TREND.day]) TREND.day = want[0] || null;
+  const sig = want.join(',');
+  if (sel.dataset.sig !== sig) {
+    sel.dataset.sig = sig;
+    sel.innerHTML = want.map(k=>'<option value="'+esc(k)+'"'+(k===TREND.day?' selected':'')+'>'+esc(k)+'</option>').join('');
+  } else {
+    sel.value = TREND.day || '';
+  }
+  sel.style.display = TREND.mode === 'hour' ? '' : 'none';
+
+  let labels, inD, outD;
+  if (TREND.mode === 'hour') {
+    labels = [...Array(24).keys()].map(h=>h+t('hour_suffix'));
+    inD = Array(24).fill(0); outD = Array(24).fill(0);
+    (days[TREND.day] || []).forEach(r=>{
+      const h = new Date(r.t).getHours();
+      inD[h] += r.i; outD[h] += r.o;
+    });
+  } else {
+    // a long range stays readable: the newest 45 days
+    const off = Math.max(0, dk.length - 45);
+    labels = dk.slice(off);
+    inD = dk.map(k=>days[k].reduce((s,r)=>s+r.i,0)).slice(off);
+    outD = dk.map(k=>days[k].reduce((s,r)=>s+r.o,0)).slice(off);
+  }
+
+  // One measure everywhere: 输入 + 输出 (total tokens), the same quantity the HUD
+  // shows. Splitting the two on one axis was unwatchable — output is 3–4 orders
+  // of magnitude smaller — and two axes fixed the visibility but left the reader
+  // adding the two bars in their head. The split still exists, in the tables and
+  // in the tooltip, which is where a breakdown belongs.
+  const totD = labels.map((_,i)=>inD[i]+outD[i]);
+  mkChart('chTrend',{type:'bar',data:{labels,datasets:[
+    {label:t('metric_total'), data:totD, backgroundColor:'#7c9cf5'}]},
+    options:{responsive:true,maintainAspectRatio:true,
+      plugins:{legend:{display:false},tooltip:{callbacks:{
+        label:c=>[full(c.raw), t('metric_in')+' '+full(inD[c.dataIndex])+' · '+t('metric_out')+' '+full(outD[c.dataIndex])]}}},
+      scales:{y:{ticks:{callback:v=>fmt(v)}}}}});
+
+  // the hit-rate chart stays daily on purpose: it is a rate, and a day's rate is
+  // the unit that reads; switching it hourly would be 24 jumpy percentages
+  const off2 = Math.max(0, dk.length - 45);
+  const labelsD = dk.slice(off2);
+  const rateD = dk.map(k=>agg(days[k]).rate).slice(off2);
+  mkChart('chRate',{type:'line',data:{labels:labelsD,datasets:[{label:t('hit'),data:rateD,borderColor:'#dc2626',backgroundColor:'rgba(220,38,38,.08)',fill:true,tension:.3,pointRadius:2}]},
+    options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{display:false}},scales:{y:{min:0,max:100,ticks:{callback:v=>v+'%'}}}}});
+}
+
+// ---- activity calendar (GitHub's contribution graph) ----
+// One square per day for the last 12 months, shade = that day's 输入 + 输出.
+//
+// Three decisions worth keeping:
+//  * the shade comes from **quartiles of the non-zero days**, not from fractions
+//    of the maximum. One 40-billion-token day would otherwise flatten a year of
+//    real use into the palest two steps of the ramp.
+//  * the date filter is not applied (only sources / models / project are): the
+//    calendar answers "when", so filtering it by "today" would show one square.
+//  * it is SVG rather than 371 divs — one innerHTML write per render, exact
+//    alignment with the month/weekday labels, and each square carries its own
+//    <title> so the native tooltip lists the day, the total and the split.
+const CAL = {cell:11, gap:3, padLeft:26, padTop:14};
+
+function renderCalendar(){
+  const box = document.getElementById('calBox');
+  if (!box) return;
+
+  // day → [total, input, output, calls], over the whole history (see above)
+  const per = {};
+  ALL.forEach(r=>{
+    if (!matchSMP(r)) return;
+    const k = dstr(r.t);
+    const e = per[k] || (per[k] = [0,0,0,0]);
+    e[0] += r.i + r.o; e[1] += r.i; e[2] += r.o; e[3]++;
+  });
+  const nz = Object.keys(per).map(k=>per[k][0]).filter(v=>v>0).sort((a,b)=>a-b);
+  const qv = p => nz.length ? nz[Math.min(nz.length-1, Math.floor(p*nz.length))] : 0;
+  const q1 = qv(.25), q2 = qv(.5), q3 = qv(.75);
+  // all non-zero days equal → every one of them is "as high as it gets"
+  const spread = q3 > q1;
+  const lvl = v => v <= 0 ? 0 : !spread ? 4 : v <= q1 ? 1 : v <= q2 ? 2 : v <= q3 ? 3 : 4;
+
+  const today = new Date(); today.setHours(0,0,0,0);
+  const DAY = 86400000;
+  const start = new Date(today.getTime() - 364*DAY);
+  start.setDate(start.getDate() - ((start.getDay()+6)%7));   // back to that Monday
+  const startMs = start.getTime();
+  const cols = Math.ceil((Math.round((today.getTime()-startMs)/DAY)+1)/7);
+  const W = CAL.padLeft + cols*(CAL.cell+CAL.gap) + 2;
+  const H = CAL.padTop + 7*(CAL.cell+CAL.gap) + 2;
+
+  const monName = d => LANG==='en' ? d.toLocaleString('en',{month:'short'}) : (d.getMonth()+1)+'月';
+  const dow = t('cal_dow').split(',');
+
+  let svg = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(t('cal_title'))}">`;
+  dow.forEach((lab,i)=>{
+    const y = CAL.padTop + (i*2)*(CAL.cell+CAL.gap) + CAL.cell - 1;
+    svg += `<text x="${CAL.padLeft-6}" y="${y}" text-anchor="end">${esc(lab)}</text>`;
+  });
+
+  let sum = 0, calls = 0, days = 0, lastMonth = -1, lastLabelX = -99;
+  for (let c = 0; c < cols; c++){
+    const monday = new Date(startMs + c*7*DAY);
+    const x = CAL.padLeft + c*(CAL.cell+CAL.gap);
+    if (monday.getMonth() !== lastMonth && x - lastLabelX >= 26){
+      svg += `<text x="${x}" y="9">${esc(monName(monday))}</text>`;
+      lastMonth = monday.getMonth(); lastLabelX = x;
+    }
+    for (let r = 0; r < 7; r++){
+      const d = new Date(startMs + (c*7+r)*DAY);
+      if (d > today) break;
+      const k = dstr(d.getTime());
+      const e = per[k];
+      const v = e ? e[0] : 0;
+      const l = lvl(v);
+      const y = CAL.padTop + r*(CAL.cell+CAL.gap);
+      const tip = e
+        ? `${k} · ${full(v)} tokens · ${t('metric_in')} ${full(e[1])} · ${t('metric_out')} ${full(e[2])} · ${full(e[3])}${t('times')}`
+        : `${k} · 0`;
+      svg += `<rect x="${x}" y="${y}" width="${CAL.cell}" height="${CAL.cell}" rx="2.5"`
+           + (l ? ` class="l${l}"` : '') + `><title>${esc(tip)}</title></rect>`;
+      sum += v; calls += e ? e[3] : 0; if (v > 0) days++;
+    }
+  }
+  box.innerHTML = svg + '</svg>';
+
+  const tot = document.getElementById('calTotal');
+  if (tot){
+    tot.textContent = fmt(sum) + ' tokens';
+    tot.title = `${full(sum)} tokens · ${full(calls)}${t('times')} · ${days}${t('cal_days_unit')}`;
+  }
+}
+
+function initTrendControls(){
+  document.querySelectorAll('#trendSeg button').forEach(b=>b.onclick=()=>{
+    TREND.mode = b.dataset.v;
+    document.querySelectorAll('#trendSeg button').forEach(x=>x.classList.toggle('on', x===b));
+    render();
+  });
+  document.getElementById('trendDay').onchange = e=>{ TREND.day = e.target.value; render(); };
+}
+
+function render(){
+  const rows = filtered();
+  const tot = agg(rows);   // NB: not `t` — that name is the i18n translator
+  document.getElementById('c-req').textContent = full(tot.n);
+  document.getElementById('c-in').textContent = fmt(tot.i); document.getElementById('c-in').title = full(tot.i);
+  document.getElementById('c-out').textContent = fmt(tot.o);
+  document.getElementById('c-cache').textContent = fmt(tot.c);
+  document.getElementById('c-rate').textContent = tot.rate+'%';
+  document.getElementById('c-ratio').textContent = tot.i ? (tot.o/tot.i*100).toFixed(2) : '0';
+
+  renderTrend(rows);
+  renderCalendar();
+
+  // by model
+  const byM = {};
+  rows.forEach(r=>{(byM[r.m]=byM[r.m]||[]).push(r);});
+  const mRows = Object.entries(byM).map(([m,rs])=>({name:m,...agg(rs)})).sort((a,b)=>b.i-a.i);
+  barRender('modelBars', mRows.slice(0,8), '#7c3aed');
+
+  // by project
+  const byP = {};
+  rows.forEach(r=>{(byP[r.p]=byP[r.p]||[]).push(r);});
+  const pRows = Object.entries(byP).map(([p,rs])=>({name:p,...agg(rs)})).sort((a,b)=>b.i-a.i).slice(0,10);
+  barRender('projBars', pRows, '#0d9488');
+
+  // hour distribution
+  const hours = Array(24).fill(0);
+  rows.forEach(r=>{hours[new Date(r.t).getHours()]++;});
+  mkChart('chHour',{type:'bar',data:{labels:[...Array(24).keys()].map(h=>h+t('hour_suffix')),datasets:[{data:hours,backgroundColor:'#60a5fa'}]},
+    options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>fmt(v)}}}}});
+
+  // agent compare
+  const perAgent = [];
+  AGENT_NAMES.forEach((name,a)=>{
+    const g = agg(rows.filter(r=>r.a===a));
+    if(g.n>0) perAgent.push({name, color:agentColor(a), g});
+  });
+  // Same single measure as the trend: 输入 + 输出 per source, one bar each, colour
+  // still identifying the source, the split in the tooltip. Call counts are not
+  // here: they are a different unit from tokens and the table above lists them.
+  mkChart('chAgent',{type:'bar',data:{
+    labels: perAgent.map(p=>p.name),
+    datasets:[{label:t('metric_total'), data:perAgent.map(p=>p.g.i+p.g.o),
+               backgroundColor:perAgent.map(p=>p.color)}]},
+    options:{responsive:true,maintainAspectRatio:true,
+      plugins:{legend:{display:false},tooltip:{callbacks:{
+        label:c=>[full(c.raw), t('metric_in')+' '+full(perAgent[c.dataIndex].g.i)+' · '+
+                                 t('metric_out')+' '+full(perAgent[c.dataIndex].g.o)]}}},
+      scales:{y:{ticks:{callback:v=>fmt(v)}}}}});
+
+  // sessions table
+  // Grouped by (source, session) only. The project is an attribute of the
+  // session, not part of its identity: including it in the key made one session
+  // show up as several rows the moment its project label differed between
+  // lines. The label is picked by majority in case a session genuinely moved.
+  const byS = {};
+  rows.forEach(r=>{
+    const k = r.a+'|'+r.s;
+    const b = byS[k] || (byS[k]={a:r.a,s:r.s,n:0,i:0,o:0,c:0,first:r.t,last:r.t,pc:{}});
+    b.n++; b.i+=r.i; b.o+=r.o; b.c+=r.c;
+    b.first=Math.min(b.first,r.t); b.last=Math.max(b.last,r.t);
+    b.pc[r.p]=(b.pc[r.p]||0)+1;
+  });
+  const sRows = Object.values(byS).sort((x,y)=>y.i-x.i);
+  sRows.forEach(b=>{
+    let best='', bn=-1;
+    for(const p in b.pc) if(b.pc[p]>bn){ bn=b.pc[p]; best=p; }
+    b.p = best;
+  });
+  // The list used to be capped at 40 rows and rendered whole, which made the
+  // panel longer than the page needed and hid everything past the 40th session.
+  // It is paged now, like the call log below it — same controls, same wording.
+  SESS.items = sRows;
+  const sig = sessSig();
+  if (sig !== SESS.sig) { SESS.sig = sig; SESS.page = 1; }   // filters changed: back to page 1
+  renderSessTable();
+
+  renderDur();
+  // Every filter change routes through render(), so hooking the paged log here
+  // covers all of them without touching each handler.
+  scheduleRecords();
+}
+
+// ---- sessions table paging (client-side: the rows come from the same snapshot) ----
+let SESS = {page:1, size:10, items:[], sig:''};
+
+/// What the page number is keyed to: the *filters*, not the data. A 5-minute
+/// reload brings the same filters and slightly more records; that must not
+/// bounce the reader back to page 1.
+function sessSig(){
+  return JSON.stringify([filters.from, filters.to, [...filters.agents].sort(), filters.proj]);
+}
+
+function renderSessTable(){
+  const total = SESS.items.length;
+  const pages = Math.max(1, Math.ceil(total / SESS.size));
+  SESS.page = Math.min(Math.max(SESS.page, 1), pages);
+  const start = (SESS.page - 1) * SESS.size;
+  const page = SESS.items.slice(start, start + SESS.size);
+  document.getElementById('sessBody').innerHTML = page.map(b=>{
+    const rate = b.i? (b.c/b.i*100).toFixed(1):0;
+    return '<tr><td style="color:'+agentColor(b.a)+';font-weight:600">'+esc(AGENT_NAMES[b.a])+'</td>'+
+      '<td>'+esc(b.s)+'</td><td title="'+esc(b.p)+'">'+esc(b.p)+'</td><td>'+b.n+'</td><td>'+fmt(b.i)+'</td><td>'+fmt(b.o)+'</td><td>'+fmt(b.c)+'</td>'+
+      '<td class="rate">'+rate+'%</td><td>'+spanStr(b.first,b.last)+'</td></tr>';
+  }).join('') || '<tr><td colspan="9" style="color:var(--muted)">'+t('no_data')+'</td></tr>';
+  document.getElementById('sessTotal').textContent = total ? tf('sess_total', {N: full(total)}) : '';
+  document.getElementById('sessPage').textContent = tf('rec_page', {P: SESS.page, T: pages});
+  document.getElementById('sessFirst').disabled = SESS.page <= 1;
+  document.getElementById('sessPrev').disabled  = SESS.page <= 1;
+  document.getElementById('sessNext').disabled  = SESS.page >= pages;
+  document.getElementById('sessLast').disabled  = SESS.page >= pages;
+}
+
+function sessGoto(p){
+  SESS.page = p;
+  renderSessTable();
+}
+
+function initSessControls(){
+  document.getElementById('sessSize').onchange = e=>{
+    SESS.size = +e.target.value; SESS.page = 1; renderSessTable();
+  };
+  document.getElementById('sessFirst').onclick = ()=>sessGoto(1);
+  document.getElementById('sessPrev').onclick  = ()=>sessGoto(SESS.page - 1);
+  document.getElementById('sessNext').onclick  = ()=>sessGoto(SESS.page + 1);
+  document.getElementById('sessLast').onclick  = ()=>sessGoto(Math.ceil(SESS.items.length / SESS.size));
+}
+
+// ---- paged call log ----
+//
+// The log used to be rendered from the full /api/data payload, which is 3.3 MB
+// at 25 k records and grows with every month of history. It is now a server-side
+// page: the browser only ever holds `REC.size` rows of it.
+
+function recQuery(){
+  const p = new URLSearchParams();
+  p.set('offset', String(REC.page * REC.size));
+  p.set('limit', String(REC.size));
+  p.set('sort', REC.sort);
+  p.set('dir', REC.dir);
+  // The agent list is always sent explicitly: an empty list means "nothing
+  // selected", which is a state the user can reach, and the server distinguishes
+  // it from "agent filter not applied".
+  p.set('agents', [...filters.agents].join(','));
+  if (filters.models.size) p.set('models', [...filters.models].join(','));
+  if (filters.proj) p.set('proj', filters.proj);
+  if (filters.from) p.set('from', filters.from);
+  if (filters.to) p.set('to', filters.to);
+  return p.toString();
+}
+
+// Refetch only when something that can change the answer has changed: render()
+// also runs from the 1-5 s refresh timers, and re-requesting a page several
+// times a second would be pure waste. On the first page the live record count
+// participates too, so newly arrived calls appear without the reader having to
+// press anything — deeper pages are deliberately left alone so rows do not shift
+// under someone who is reading them.
+function recSig(){
+  const q = recQuery();
+  return REC.page === 0 ? q + '&live=' + ALL.length : q;
+}
+
+function scheduleRecords(force){
+  const sig = recSig();
+  if (!force && sig === REC.sig) return;
+  clearTimeout(REC.timer);
+  REC.timer = setTimeout(()=>{ REC.sig = sig; loadRecords(sig); }, 250);
+}
+
+async function loadRecords(qs){
+  const body = document.getElementById('recBody');
+  if (!body) return;
+  const mine = ++REC.seq;
+  try{
+    const r = await fetch('/api/records?' + (qs || recQuery()), {cache:'no-store'});
+    const d = await r.json();
+    // an older response must never overwrite a newer one
+    if (mine !== REC.seq) return;
+    // A rejected filter (the server answers 400 with {error}) must surface as
+    // its own message. Falling through to d.rows would raise a TypeError and
+    // hide the real reason the table is empty.
+    if (!r.ok || !Array.isArray(d.rows)) throw new Error(d && d.error ? d.error : 'HTTP ' + r.status);
+    REC.total = d.total;
+    body.innerHTML = d.rows.map(row=>{
+      const rate = row.i ? (row.c/row.i*100).toFixed(1) : 0;
+      return '<tr>'+
+        '<td style="white-space:nowrap">'+esc(dtStr(row.t))+'</td>'+
+        '<td style="color:'+agentColor(row.a)+';font-weight:600;white-space:nowrap">'+esc(AGENT_NAMES[row.a])+'</td>'+
+        '<td style="font-family:ui-monospace,monospace;font-size:11px">'+esc(row.m)+'</td>'+
+        '<td title="'+esc(row.p)+'">'+esc(row.p)+'</td>'+
+        '<td style="font-family:ui-monospace,monospace;font-size:11px">'+esc(row.s)+'</td>'+
+        '<td style="text-align:right">'+fmt(row.i)+'</td>'+
+        '<td style="text-align:right">'+fmt(row.o)+'</td>'+
+        '<td style="text-align:right">'+fmt(row.c)+'</td>'+
+        '<td class="rate" style="text-align:right">'+rate+'%</td></tr>';
+    }).join('') || '<tr><td colspan="9" style="color:var(--muted)">'+esc(t('no_data'))+'</td></tr>';
+  }catch(e){
+    if (mine !== REC.seq) return;
+    // The row count is unknown, so blank the pager rather than print a "0"
+    // the reader would take as a real answer.
+    body.innerHTML = '<tr><td colspan="9" style="color:var(--muted)">'+esc(t('load_fail'))+esc(e && e.message ? e.message : e)+'</td></tr>';
+    REC.total = 0;
+    document.getElementById('recTotal').textContent = '';
+    document.getElementById('recPage').textContent = '';
+    for (const id of ['recFirst','recPrev','recNext','recLast']) document.getElementById(id).disabled = true;
+    return;
+  }
+  renderRecPager();
+}
+
+function renderRecPager(){
+  const pages = Math.max(1, Math.ceil(REC.total / REC.size));
+  if (REC.page > pages - 1) REC.page = pages - 1;
+  if (REC.page < 0) REC.page = 0;
+  document.getElementById('recPage').textContent = tf('rec_page', {P: REC.page + 1, T: pages});
+  document.getElementById('recTotal').textContent = tf('rec_total', {N: full(REC.total)}) + t('rec_of');
+  document.getElementById('recFirst').disabled = REC.page <= 0;
+  document.getElementById('recPrev').disabled  = REC.page <= 0;
+  document.getElementById('recNext').disabled  = REC.page >= pages - 1;
+  document.getElementById('recLast').disabled  = REC.page >= pages - 1;
+  for (const k of ['t','i','o','c']) {
+    const el = document.getElementById('arw_' + k);
+    if (el) el.textContent = REC.sort === k ? (REC.dir === 'desc' ? ' ↓' : ' ↑') : '';
+  }
+}
+
+function recGoto(page){
+  REC.page = Math.max(0, page);
+  loadRecords();
+}
+
+function initRecControls(){
+  document.getElementById('recSize').onchange = e=>{
+    REC.size = parseInt(e.target.value, 10) || 10;
+    REC.page = 0;
+    loadRecords();
+  };
+  document.getElementById('recFirst').onclick = ()=>recGoto(0);
+  document.getElementById('recPrev').onclick  = ()=>recGoto(REC.page - 1);
+  document.getElementById('recNext').onclick  = ()=>recGoto(REC.page + 1);
+  document.getElementById('recLast').onclick  = ()=>recGoto(Math.ceil(REC.total / REC.size) - 1);
+  // Clicking the active column flips the direction, as a table header should.
+  // Anything else starts descending, which is what these numbers are for.
+  document.querySelectorAll('.thsort').forEach(th=>{
+    th.onclick = ()=>{
+      const k = th.dataset.k;
+      if (REC.sort === k) REC.dir = REC.dir === 'desc' ? 'asc' : 'desc';
+      else { REC.sort = k; REC.dir = 'desc'; }
+      REC.page = 0;
+      loadRecords();
+    };
+  });
+}
+
+// ---- supported-agents registry (mirrors the Rust parser test suite) ----
+// Local detection, straight from /api/sources. `records` is the count of usage
+// records a source actually contributed — the table below shows a source only
+// when that number is greater than zero.
+let DETECT = {sources: []};
+async function loadDetect(){
+  try{
+    const d = await (await fetch('/api/sources', {cache:'no-store'})).json();
+    DETECT = {sources: d.sources || []};
+  }catch(e){}
+  renderSupport();
+}
+// Metadata for names we know: type, the path we read, and a one-line note. A
+// source that was discovered automatically has no entry here and gets a generic
+function recordsOf(s, counts){
+  // /api/sources reports the count (one place, three pages agree); counting the
+  // records we already hold is the fallback if that field is ever missing.
+  return s.records != null ? s.records : (counts[s.agent] || 0);
+}
+
+/// Bytes for the notes column (this page had no formatter of its own).
+function bytesH(b){
+  const u = ['B','KB','MB','GB'];
+  let i = 0;
+  while (b >= 1024 && i < u.length - 1){ b /= 1024; i++; }
+  return b.toFixed(i ? 1 : 0) + u[i];
+}
+// Rows = sources that produced usage on this machine, most-used first. Nothing
+// else belongs here: not the formats we support but this machine has never
+// used, not the stores we can see but cannot read. Those are still in
+// /api/sources (and in the Settings rescan list), they just are not a claim
+// about what this install actually measures.
+function renderSupport(){
+  const li = LANG==='en' ? 1 : 0;
+  // Everything shown is measured here and now: counts, the span of activity, the
+  // hit rate — no hand-written copy about what some other machine looked like.
+  const byAgent = {};
+  for (const r of ALL){
+    const a = byAgent[r.a] || (byAgent[r.a] = {n:0, sess:new Set(), i:0, c:0, first:r.t, last:r.t});
+    a.n++; a.sess.add(r.s); a.i += r.i; a.c += r.c;
+    if (r.t < a.first) a.first = r.t;
+    if (r.t > a.last) a.last = r.t;
+  }
+  const counts = {};
+  for (const k in byAgent) counts[k] = byAgent[k].n;
+  const rows = DETECT.sources
+    .map(s => ({s, n: recordsOf(s, counts)}))
+    .filter(x => x.n > 0)
+    .sort((a,b) => b.n - a.n);
+  // Before /api/sources answers, "no sources" is not yet a fact — don't flash
+  // the empty-state sentence at every page load.
+  if (!DETECT.sources.length){
+    document.getElementById('supBody').innerHTML =
+      '<tr><td colspan="4" style="color:var(--muted);font-size:12px;padding:10px 4px">…</td></tr>';
+    return;
+  }
+  if (!rows.length){
+    document.getElementById('supBody').innerHTML =
+      '<tr><td colspan="4" style="color:var(--muted);font-size:12px;padding:10px 4px">'+t('sup_empty')+'</td></tr>';
+    return;
+  }
+  document.getElementById('supBody').innerHTML = rows.map(({s, n})=>{
+    // the glob is what the scanner was told to look at, straight from the API
+    const src = (s.patterns && s.patterns.length) ? s.patterns.join('  ') : t('none');
+    const a = byAgent[s.agent] || {n, sess:new Set(), i:0, c:0, first:0, last:0};
+    const bits = [];
+    // The call count already has a column of its own ("本机"), so the note starts
+    // with what that column cannot say.
+    if (a.sess.size) bits.push(a.sess.size + t('sup_sessions'));
+    if (s.files) bits.push(s.files + t('sup_files') + (s.bytes ? ' · ' + bytesH(s.bytes) : ''));
+    if (a.first && a.last) {
+      const d1 = dstr(a.first), d2 = dstr(a.last);
+      bits.push(d1 === d2 ? d1 : d1 + ' → ' + d2);
+    }
+    if (a.i > 0) bits.push(t('sup_hit') + ' ' + (100*a.c/a.i).toFixed(1) + '%');
+    if (s.parseable === false) bits.push(t('sup_unparsed'));
+    if (s.custom) bits.unshift(s.discovered ? t('sup_auto') : t('sup_manual'));
+    const note = bits.join(' · ');
+    return '<tr><td><b>'+s.name+'</b></td>'+
+      '<td style="font-family:ui-monospace,monospace;font-size:11px">'+src+'</td>'+
+      '<td><span style="background:#dcfce7;color:#166534;border-radius:10px;padding:2px 8px;font-size:11px;white-space:nowrap">'+
+        n+' '+t('loc_records')+'</span></td>'+
+      '<td style="white-space:normal;max-width:320px">'+note+'</td></tr>';
+  }).join('');
+}
+renderSupport();
+loadDetect();
+
+// One bar per row, same measure as the charts: 输入 + 输出. The split moves into
+// the row's tooltip, and the value column prints the total plus the call count.
+function barRender(id, rows, color){
+  const total = r => r.i + r.o;
+  const max = Math.max(...rows.map(total), 1);
+  document.getElementById(id).innerHTML = rows.map(r=>
+    '<div class="row"><div class="name" title="'+r.name+'">'+r.name+'</div>'+
+    '<div class="track" title="'+t('metric_in')+' '+full(r.i)+' · '+t('metric_out')+' '+full(r.o)+'">'+
+      '<div class="fill" style="width:'+(total(r)/max*100).toFixed(1)+'%;background:'+color+'"></div></div>'+
+    '<div class="val">'+fmt(total(r))+' · '+r.n+t('times')+'</div></div>').join('')
+    || '<div style="color:var(--muted);font-size:12px">'+t('none')+'</div>';
+}
+
+// filter interactions
+document.querySelectorAll('#presets .chip').forEach(el=>el.onclick=()=>{
+  document.querySelectorAll('#presets .chip').forEach(x=>x.classList.remove('on'));
+  el.classList.add('on');
+  const d=+el.dataset.d;
+  filters.from=null; filters.to=null;
+  document.getElementById('dFrom').value=''; document.getElementById('dTo').value='';
+  if(d>0){
+    const now=new Date(); const to=dstr(now.getTime());
+    const from=dstr(now.getTime()-(d-1)*86400000);
+    filters.from=from; filters.to=to;
+    document.getElementById('dFrom').value=from; document.getElementById('dTo').value=to;
+  } else if(d===1){
+    const today=dstr(Date.now());
+    filters.from=today; filters.to=today;
+    document.getElementById('dFrom').value=today; document.getElementById('dTo').value=today;
+  }
+  render();
+});
+document.getElementById('dFrom').onchange=e=>{filters.from=e.target.value||null;render();};
+document.getElementById('dTo').onchange=e=>{filters.to=e.target.value||null;render();};
+// The source filter is built from the data, not from a hardcoded list of the
+// ten built-ins: chips appear for the sources this machine actually has, so
+// the row cannot offer to filter by something that has never produced a
+// record — and auto-discovered sources (Goose, VClaw, …) get a chip too, which
+// the static markup never gave them.
+function buildAgentChips(){
+  const box = document.getElementById('agentChips');
+  const counts = {};
+  for (const r of ALL) counts[r.a] = (counts[r.a] || 0) + 1;
+  const ids = Object.keys(counts).map(Number).filter(a => counts[a] > 0).sort((a,b) => a-b);
+  // A source that has just appeared joins the filter set switched on; ones the
+  // user switched off stay off (the set survives rebuilds).
+  const first = !box.dataset.built;
+  box.dataset.built = '1';
+  box.innerHTML = ids.map(a => {
+    if (first) filters.agents.add(a);
+    const on = filters.agents.has(a);
+    const cls = 'chip agent'+(a % 10)+(on ? ' on' : '');
+    const style = a < 10 ? '' : ' style="background:'+agentColor(a)+';border-color:'+agentColor(a)+'"';
+    return '<div class="'+cls+'"'+style+' data-a="'+a+'">'+esc(AGENT_NAMES[a] || ('#'+a))+'</div>';
+  }).join('');
+  box.querySelectorAll('.chip[data-a]').forEach(el => el.onclick = () => {
+    const a = +el.dataset.a;
+    if (filters.agents.has(a)) { filters.agents.delete(a); el.classList.remove('on'); }
+    else { filters.agents.add(a); el.classList.add('on'); }
+    render();
+  });
+}
+// Refreshing must also refetch the paged log: its signature is unchanged when
+// only new records arrived, so the change-guard would otherwise skip it.
+//
+// The button used to look dead. It does work — measured: a click refetches
+// /api/settings, /api/data, /api/stream and the record page, and the header
+// stamp moves — but the *only* visible trace was that second-resolution stamp
+// at the top of the page, which reads as "nothing happened" when you click twice
+// inside a second or when no new records arrived. So the button now reports on
+// itself: working…, then how many records came in (or that it re-synced), then
+// back to its label.
+document.getElementById('refreshBtn').onclick = async function(){
+  const btn = this;
+  const before = ALL.length;
+  btn.disabled = true;
+  btn.textContent = t('refresh_ing');
+  await load();
+  scheduleRecords(true);
+  const delta = ALL.length - before;
+  btn.textContent = delta > 0 ? t('refresh_more').replace('%d', delta) : t('refresh_done');
+  setTimeout(()=>{ btn.textContent = t('refresh'); btn.disabled = false; }, 1800);
+};
+initRecControls();
+initSessControls();
+initTrendControls();
+
+applyI18n();   // paint with the cached preference, then sync with the server
+
+load();
+
+// ---- duration & idle analysis (respects filters) ----
+document.getElementById('durDim').onchange = render;
+function fmtDur(ms){
+  if (ms < 60000) return t('dur_lt1');
+  if (ms < 3600000) return (ms/60000).toFixed(0) + t('dur_min');
+  return (ms/3600000).toFixed(1) + t('dur_hour');
+}
+function fmtAgo(ms){
+  const m = ms/60000;
+  if (m < 1) return t('ago_now');
+  if (m < 60) return m.toFixed(0) + t('ago_min');
+  const h = m/60;
+  if (h < 24) return h.toFixed(1) + t('ago_hour');
+  return (h/24).toFixed(1) + t('ago_day');
+}
+function idleBadge(gapMs){
+  const d = gapMs/86400000;
+  if (gapMs < 600000) return [t('badge_active'), '#16a34a'];
+  if (gapMs < 3600000) return [t('badge_1h'), '#16a34a'];
+  if (gapMs < 86400000) return [t('badge_24h'), '#854F0B'];
+  if (d < 7) return [tf('badge_idle', {D:d.toFixed(1)}), '#ea580c'];
+  return [tf('badge_idle', {D:d.toFixed(0)}), '#dc2626'];
+}
+function renderDur(){
+  const dim = document.getElementById('durDim').value;
+  const rows = filtered();
+  const map = {};
+  for (const r of rows){
+    const k = dim === 'a' ? AGENT_NAMES[r.a] : dim === 'm' ? r.m : r.p;
+    if (!map[k]) map[k] = {n:0, last:r.t, spans:[]};
+    const e = map[k];
+    e.n++; e.spans.push(r.t);
+    if (r.t > e.last) e.last = r.t;
+  }
+  const now = Date.now();
+  const out = Object.entries(map).map(([k, e])=>{
+    const ts = e.spans.sort((a,b)=>a-b);
+    let activeMs = 0, sessions = 0, prev = 0;
+    for (const t of ts){
+      if (prev === 0 || t - prev > 5*60000) sessions++;
+      else activeMs += t - prev;
+      prev = t;
+    }
+    return {k, n:e.n, sessions, activeMs, last:e.last, gap: now - e.last};
+  }).sort((a,b)=>b.gap - a.gap);  // most idle first
+  document.getElementById('durBody').innerHTML = out.map(o=>{
+    const [txt, color] = idleBadge(o.gap);
+    return '<tr><td><b>' + o.k + '</b></td><td>' + o.n + '</td><td>' + o.sessions + '</td><td>' +
+      fmtDur(o.activeMs) + '</td><td>' + fmtAgo(o.gap) + '</td>' +
+      '<td style="color:' + color + ';font-weight:600">' + txt + '</td></tr>';
+  }).join('') || '<tr><td colspan="6" style="color:var(--muted)">'+t('no_data')+'</td></tr>';
+}
+
+// ---- global leaderboard (opt-in) ----
+// 排行榜现在和埋点共用一个 Rust 服务（早先是一个独立的 Python 服务）。
+// 公开页只做两件事：上报当日用量、查"我在全球第几名"；完整榜单在后台控制台。
+const LB_URL = localStorage.getItem('tb_lb_url') || 'https://fanshitou.cn/tokendance';
+const LB_RANGE_KEY = 'tb_lb_days';
+let lbUid = localStorage.getItem('tb_uid');
+if (!lbUid){ lbUid = 'u-' + Math.random().toString(36).slice(2,10); localStorage.setItem('tb_uid', lbUid); }
+const lbCheck = document.getElementById('lbCheck');
+const lbName = document.getElementById('lbName');
+lbCheck.checked = localStorage.getItem('tb_opt_in') === '1';
+lbName.value = localStorage.getItem('tb_name') || '';
+function lbDays(){ const d = parseInt(localStorage.getItem(LB_RANGE_KEY) ?? '7', 10); return [0,1,7,30].includes(d) ? d : 7; }
+function lbRangeLabel(){ return {0:t('preset_all'), 1:t('preset_today'), 7:t('preset_7d'), 30:t('preset_30d')}[lbDays()]; }
+function cstDay(){ return new Date(Date.now() + 8*3600e3).toISOString().slice(0,10); }
+document.querySelectorAll('#lbRanges .chip').forEach(el=>{
+  el.classList.toggle('on', parseInt(el.dataset.d,10) === lbDays());
+  el.onclick = ()=>{ localStorage.setItem(LB_RANGE_KEY, el.dataset.d); lbTick(); };
+});
+
+function lbTick(){
+  const on = lbCheck.checked;
+  localStorage.setItem('tb_opt_in', on ? '1' : '0');
+  localStorage.setItem('tb_name', lbName.value.trim());
+  document.getElementById('lbBody').style.display = on ? 'block' : 'none';
+  document.querySelectorAll('#lbRanges .chip').forEach(el=>el.classList.toggle('on', parseInt(el.dataset.d,10) === lbDays()));
+  if (!on) { document.getElementById('lbSync').textContent = t('lb_not_joined'); return; }
+  const day = cstDay();
+  // 上报的永远是"今天"，范围只影响查询（今天 / 近 7 天 / 近 30 天 / 全部）
+  let burn = 0, iSum = 0, oSum = 0;
+  const agents = new Set();
+  for (const r of ALL){
+    if (new Date(r.t + 8*3600e3).toISOString().slice(0,10) !== day) continue;
+    burn += r.i + r.o; iSum += r.i; oSum += r.o; agents.add(AGENT_NAMES[r.a]);
+  }
+  fetch(LB_URL + '/api/lb/submit', {method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({uid: lbUid, name: lbName.value.trim() || 'anon', day, burn, i: iSum, o: oSum, agents: [...agents].join(',')})})
+    .then(()=>fetch(LB_URL + '/api/lb/me?uid=' + encodeURIComponent(lbUid) + '&days=' + lbDays()))
+    .then(r=>r.json()).then(d=>{
+      document.getElementById('lbSync').textContent = t('lb_synced') + new Date().toTimeString().slice(0,8);
+      document.getElementById('lbMe').textContent = tf('lb_me', {R:d.rank, T:d.total, P:d.percentile});
+      document.getElementById('lbDetail').textContent = tf('lb_detail',
+        {G: lbRangeLabel(), B: full(d.burn), T: d.total});
+    }).catch(()=>{ document.getElementById('lbSync').textContent = t('lb_unreachable'); });
+}
+lbCheck.onchange = lbTick;
+lbName.onchange = lbTick;
+setInterval(lbTick, 300000);
+setTimeout(lbTick, 1500);
+
+// ---- live burn monitor: per-second buckets from local records ----
+let burnChart = null;
+function burnOf(r){ return r.i + r.o; }  // 输入 + 输出，与「今日 TOKEN 总量」同一口径
+function burnColor(v){
+  // continuous heat ramp: gray → green → amber → orange → red
+  const stops = [
+    [0,      0.55, 0.58, 0.63],
+    [2000,   0.08, 0.55, 0.22],
+    [10000,  0.80, 0.38, 0.05],
+    [30000,  0.85, 0.15, 0.05],
+    [80000,  0.75, 0.05, 0.08],
+  ];
+  if (v <= stops[0][0]) return rgb(stops[0]);
+  for (let i = 1; i < stops.length; i++){
+    if (v <= stops[i][0]){
+      const a = stops[i-1], b = stops[i], t = (v - a[0]) / (b[0] - a[0]);
+      return rgb([0, a[1]+(b[1]-a[1])*t, a[2]+(b[2]-a[2])*t, a[3]+(b[3]-a[3])*t]);
+    }
+  }
+  return rgb(stops[stops.length-1]);
+  function rgb(s){ return `rgb(${Math.round(s[1]*255)},${Math.round(s[2]*255)},${Math.round(s[3]*255)})`; }
+}
+function fmtGrouped(n){ return n.toLocaleString('en-US'); }
+
+// ---- live figures ----
+//
+// These come from the server, which locates them by binary search over a
+// time-sorted array: ~0.5 ms at any size, measured flat from 1 k to 200 k
+// records. The page used to recompute the same numbers here by scanning every
+// record — twice, once for "today" and once for the 60-second chart — on a
+// one-second timer. That cost 4 ms of CPU per second at the current 26 k
+// records, 31 ms at 200 k and 77 ms at 500 k, so it grew without bound while
+// producing the same answer.
+//
+// Taking the server's answer also removes two inconsistencies the local version
+// had: its 60 buckets now cover exactly the same 60 seconds as `burn60` (they
+// used to differ by one record that fell into a 61st bucket that does not
+// exist), and a record stamped in the future no longer reads as activity, which
+// is what used to keep the burn figure and the menubar ring alive on their own.
+let LIVE = null;
+let LIVE_ERR = false;
+async function liveTick(){
+  try{
+    const r = await fetch('/api/live', {cache:'no-store'});
+    if (r.ok) { LIVE = await r.json(); LIVE_ERR = false; }
+    else if (!LIVE) return;
+  }catch(e){
+    // A dropped request must not blank the panel or reset the history: keep
+    // showing the last good sample, the next tick is a second away.
+    if (!LIVE) return;
+  }
+  const today = LIVE.today || {n:0, i:0, o:0, c:0};
+  const tI = today.i, tO = today.o, tC = today.c;
+  const tBurn = tI + tO;   // 燃烧 = 输入 + 输出（与这个数字同一口径）
+  // Headline = input + output (`today.t`), which is what "total tokens" means
+  // on every other usage page, and it is exactly what the menubar HUD's big
+  // number shows. It used to be today's *input* alone — off by 0.2% here, but
+  // labelled "tokens", which read like a total while being the prompt side
+  // only. Burn is still on the card: the live rate on the left, and the two
+  // parts named in the detail line below (input and output; the cache shows up
+  // only as the hit rate, which is where a discount would matter — not in a
+  // token total).
+  const tAll = (typeof today.t === 'number') ? today.t : (tI + tO);
+  const tb = document.getElementById('todayBurn');
+  tb.textContent = fmtGrouped(tAll);
+  tb.style.color = burnColor(tBurn);
+  document.getElementById('todayDetail').textContent =
+    tf('today_detail', {I:fmt(tI), O:fmt(tO), R:(tI ? (tC/tI*100).toFixed(1) : '0'), N:today.n});
+  // 60 buckets of 1s, oldest first, straight from the server
+  const buckets = Array.isArray(LIVE.buckets) && LIVE.buckets.length === 60
+    ? LIVE.buckets : new Array(60).fill(0);
+  const b60 = LIVE.burn60 || 0;
+  const el = document.getElementById('burnBig');
+  el.textContent = fmtGrouped(b60);
+  el.style.color = burnColor(b60);
+  document.getElementById('burnStatus').textContent =
+    b60 > 0 ? tf('burn_active', {A:LIVE.active||0})
+            : t('burn_idle');
+  const dot = document.getElementById('burnDot');
+  dot.className = b60 > 0 ? 'pulsedot hot' : 'pulsedot';
+  if (!burnChart){
+    burnChart = new Chart(document.getElementById('chBurn'), {
+      type:'bar',
+      data:{ labels:buckets.map((_,i)=>i-59), datasets:[{data:buckets, backgroundColor:buckets.map(v=>burnColor(v))}]},
+      options:{ responsive:true, maintainAspectRatio:false, animation:false,
+        plugins:{ legend:{display:false}, tooltip:{callbacks:{label:c=>full(c.raw)+' tokens'}} },
+        scales:{ x:{display:false}, y:{ticks:{callback:v=>fmt(v)}, beginAtZero:true} } }
+    });
+  } else {
+    burnChart.data.datasets[0].data = buckets;
+    burnChart.data.datasets[0].backgroundColor = buckets.map(v=>burnColor(v));
+    burnChart.update('none');
+  }
+}
+setInterval(liveTick, 1000);
+liveTick();
+
+// pick up changes made in Settings (or by the native HUD) without a reload.
+//
+// These two statements used to sit *after* </html> and outside the <script>
+// tag. Nothing past </html> is code: the HTML parser re-opens <body> and
+// appends the text as a text node, so the page both failed to run either of
+// them AND rendered the raw JavaScript source as visible garbage at the very
+// bottom of the dashboard. (Verified with a headless Chromium --dump-dom.)
+setInterval(async () => {
+  try{
+    const r = await fetch('/api/settings', {cache:'no-store'});
+    const p = await r.json();
+    if (p.lang !== PREFS.lang || p.theme !== PREFS.theme) { PREFS.lang = p.lang; PREFS.theme = p.theme; applyPrefs(); }
+  }catch(e){}
+}, 5000);
+// follow the system appearance while the theme preference is 'auto'
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { if (PREFS.theme === 'auto') applyTheme(); });
+</script>
+</body>
+</html>

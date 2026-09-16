@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TokenDance · 介绍</title>
+<!-- inline so there is no /favicon.ico round-trip: the four pages used to 404 on it -->
+<link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+PGNpcmNsZSBjeD0iMTYiIGN5PSIxNiIgcj0iMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzNiODJmNiIgc3Ryb2tlLXdpZHRoPSI3Ii8+PC9zdmc+">
+<style>
+:root{
+  --bg:#f5f6f8; --card:#fff; --card-2:#fafbfc; --border:#e5e7eb; --text:#1f2937; --muted:#6b7280;
+  --chip:#fff; --chip-on:#1f2937; --chip-on-text:#fff; --shadow:0 1px 2px rgba(0,0,0,.04);
+  --accent:#2563eb;
+}
+html[data-theme="dark"]{
+  --bg:#161719; --card:#1f2124; --card-2:#242629; --border:#33363a; --text:#e8eaed; --muted:#9aa0a6;
+  --chip:#242629; --chip-on:#e8eaed; --chip-on-text:#161719; --shadow:0 1px 2px rgba(0,0,0,.3);
+  --accent:#7aa2f7;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+  background:var(--bg);color:var(--text);padding:28px;font-size:14px;transition:background .2s,color .2s}
+.wrap{max-width:760px;margin:0 auto}
+header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;gap:12px}
+h1{font-size:19px;display:flex;align-items:center;gap:9px}
+.sub{color:var(--muted);font-size:12px;margin-top:3px}
+.nav{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.nav a,.nav .on{color:var(--accent);text-decoration:none;font-size:13px;border:1px solid var(--border);
+  border-radius:8px;padding:7px 13px;background:var(--card);white-space:nowrap}
+.nav a:hover{border-color:var(--accent)}
+.nav .on{color:var(--chip-on-text);background:var(--chip-on);border-color:var(--chip-on);
+  font-weight:600;cursor:default}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin-bottom:14px;box-shadow:var(--shadow)}
+.card h2{font-size:13px;margin-bottom:8px}
+.card p{font-size:13px;line-height:1.65;margin-bottom:8px}
+.card p:last-child{margin-bottom:0}
+.card .note{font-size:11px;color:var(--muted);margin-bottom:12px;line-height:1.5}
+.feats{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (max-width:600px){.feats{grid-template-columns:1fr}}
+.feat{background:var(--card-2);border:1px solid var(--border);border-radius:10px;padding:11px 13px}
+.feat .t{font-size:13px;font-weight:600;margin-bottom:3px}
+.feat .d{font-size:12px;color:var(--muted);line-height:1.5}
+.rel{margin-bottom:14px}
+.rel:last-child{margin-bottom:0}
+.rel .v{font-size:13px;font-weight:700}
+.rel .v .tag{font-weight:400;color:var(--muted);font-size:11px;margin-left:6px}
+.rel ul{margin:6px 0 0 18px}
+.rel li{font-size:12.5px;line-height:1.7;color:var(--text)}
+.hint{font-size:11px;color:var(--muted);margin-top:10px;line-height:1.55}
+.card a{color:var(--accent);text-decoration:none}
+.card a:hover{text-decoration:underline}
+code{font-family:ui-monospace,Menlo,monospace;font-size:11.5px;background:var(--card-2);
+  border:1px solid var(--border);border-radius:4px;padding:1px 5px}
+
+/* ---------- 品牌标 ---------- */
+.brand{width:42px;height:42px;flex:0 0 42px;border-radius:11px;display:block}
+.hd{display:flex;align-items:center;gap:11px}
+
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="hd">
+      <!-- 应用图标（Assets/icon.svg 内联，id 加了 td- 前缀避免和页面里其它元素撞名） -->
+      <svg class="brand" viewBox="0 0 1024 1024" aria-hidden="true">
+        <defs>
+          <linearGradient id="td-bg" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#1c1722"/><stop offset="1" stop-color="#100d14"/>
+          </linearGradient>
+          <linearGradient id="td-blue" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#7eb3ff"/><stop offset="1" stop-color="#2f7bf6"/>
+          </linearGradient>
+          <linearGradient id="td-orange" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#ffc08a"/><stop offset="1" stop-color="#f97316"/>
+          </linearGradient>
+          <linearGradient id="td-green" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#8ceba5"/><stop offset="1" stop-color="#22c55e"/>
+          </linearGradient>
+          <linearGradient id="td-purple" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#c9b4ff"/><stop offset="1" stop-color="#8b5cf6"/>
+          </linearGradient>
+        </defs>
+        <rect x="64" y="64" width="896" height="896" rx="200" fill="url(#td-bg)"/>
+        <rect x="66" y="66" width="892" height="892" rx="198" fill="none" stroke="#fff" stroke-opacity=".12" stroke-width="3"/>
+        <rect x="260" y="388" width="120" height="120" rx="32" fill="url(#td-blue)"/>
+        <rect x="388" y="516" width="120" height="120" rx="32" fill="url(#td-orange)"/>
+        <rect x="516" y="388" width="120" height="120" rx="32" fill="url(#td-green)"/>
+        <rect x="644" y="516" width="120" height="120" rx="32" fill="url(#td-purple)"/>
+      </svg>
+      <div>
+        <h1>TokenDance</h1>
+        <div class="sub" data-i18n="sub">菜单栏里的 AI Agent 用量仪表 · 全部数据留在本机</div>
+      </div>
+    </div>
+    <nav class="nav">
+      <a href="/" data-i18n="nav_home">主页</a>
+      <a href="/sources" data-i18n="nav_sources">数据源</a>
+      <a href="/settings" data-i18n="nav_settings">设置</a>
+      <span class="on" data-i18n="nav_about">关于</span>
+    </nav>
+  </header>
+
+  <div class="card">
+    <h2 data-i18n="what_h">这是什么</h2>
+    <p data-i18n="what_p1">读本机 AI 编程助手（Codex、Claude Code 等）写下的会话转录，
+      把 token 用量变成能直接看的东西：菜单栏悬浮窗的实时燃烧率、当日总量与命中率，加一份网页仪表盘。</p>
+  </div>
+
+  <div class="card">
+    <h2 data-i18n="how_h">工作原理</h2>
+    <p data-i18n="how_p1">应用自带一个本地服务（双击即用，无需安装依赖）：扫描各 agent 的转录目录，
+      解析每一次调用，存进本机 SQLite，再在本地端口提供数据与网页。</p>
+  </div>
+
+  <div class="card">
+    <h2 data-i18n="feat_h">特性</h2>
+    <div class="feats">
+      <div class="feat"><div class="t" data-i18n="f1t">实时悬浮窗</div><div class="d" data-i18n="f1d">燃烧率里程计、热量变色、每 agent 排行；玻璃质感，跟随系统深浅色。</div></div>
+      <div class="feat"><div class="t" data-i18n="f2t">网页仪表盘</div><div class="d" data-i18n="f2d">按天 / 数据源 / 项目 / 模型的图表，活动记录热力图，调用记录分页表格。</div></div>
+      <div class="feat"><div class="t" data-i18n="f3t">多数据源</div><div class="d" data-i18n="f3d">Codex、Claude Code 等自动发现，无需配置。</div></div>
+      <div class="feat"><div class="t" data-i18n="f4t">双击即用</div><div class="d" data-i18n="f4d">应用自带服务端，自动拉起、崩溃自愈，不依赖开发环境。</div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2 data-i18n="priv_h">隐私</h2>
+    <p data-i18n="priv_p1">解析、存储、聚合全部发生在本机，token 用量数据不出本机。</p>
+    <p data-i18n="priv_p2">默认每 6 小时发一条匿名计数 ping（随机 id、版本号、系统与芯片、界面偏好、
+      运行时长；不含用量数字、文件名、项目或会话内容），菜单栏可一键关闭，服务端不记录该请求的 IP。
+      排行榜是另一个开关，默认关闭，参与后才上报当日总量与昵称。</p>
+    <p data-i18n="priv_p3">不读取系统隐私目录：通讯录、信息、邮件、Safari、健康、日历、提醒、
+      iCloud Drive 一律不进入——扫描、按名字搜索、手动填路径三条路都在碰到磁盘之前就拒绝。</p>
+  </div>
+
+  <div class="card">
+    <h2 data-i18n="dev_h">开发者</h2>
+    <p><span data-i18n="dev_p">XenoStudio Shanghai · 联系邮箱：</span><a
+       href="mailto:tsuixihang@gmail.com">tsuixihang@gmail.com</a></p>
+  </div>
+
+
+  <div class="hint" data-i18n="foot">本页随应用发布；运行中的版本以菜单栏「关于」为准。</div>
+</div>
+
+<script>
+// 下面这些值**一律是纯文本**：apply() 用 `textContent` 写进页面，字符串里带
+// <b>/<code> 这类标签会原样显示（2026-09-16 用户就看到了 `<b>匿名使用统计默认开启</b>`）。
+// 需要强调就改页面结构，别往字符串里塞标签。
+const I18N = {
+  zh:{ sub:'菜单栏里的 AI Agent 用量仪表 · 全部数据留在本机',
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+       nav_home:'主页', nav_sources:'数据源', nav_settings:'设置', nav_about:'关于',
+       what_h:'这是什么',
+       what_p1:'读本机 AI 编程助手（Codex、Claude Code 等）写下的会话转录，把 token 用量变成能直接看的东西：菜单栏悬浮窗的实时燃烧率、当日总量与命中率，加一份网页仪表盘。',
+       
+       
+         
+       
+       
+       
+       
+         
+       
+          
+         
+          
+           
+       
+       how_h:'工作原理',
+       how_p1:'应用自带一个本地服务（双击即用，无需安装依赖）：扫描各 agent 的转录目录，解析每一次调用，存进本机 SQLite，再在本地端口提供数据与网页。',
+       feat_h:'特性',
+       f1t:'实时悬浮窗', f1d:'燃烧率里程计、热量变色、每 agent 排行；玻璃质感，跟随系统深浅色。',
+       f2t:'网页仪表盘', f2d:'按天 / 数据源 / 项目 / 模型的图表，活动记录热力图，调用记录分页表格。',
+       f3t:'多数据源', f3d:'Codex、Claude Code 等自动发现，无需配置。',
+       f4t:'双击即用', f4d:'应用自带服务端，自动拉起、崩溃自愈，不依赖开发环境。',
+       priv_h:'隐私',
+       dev_h:'开发者', dev_p:'XenoStudio Shanghai · 联系邮箱：',
+       priv_p1:'解析、存储、聚合全部发生在本机，token 用量数据不出本机。',
+       priv_p2:'默认每 6 小时发一条匿名计数 ping（随机 id、版本号、系统与芯片、界面偏好、运行时长；不含用量数字、文件名、项目或会话内容），菜单栏可一键关闭，服务端不记录该请求的 IP。排行榜是另一个开关，默认关闭，参与后才上报当日总量与昵称。',
+       priv_p3:'不读取系统隐私目录：通讯录、信息、邮件、Safari、健康、日历、提醒、iCloud Drive 一律不进入——扫描、按名字搜索、手动填路径三条路都在碰到磁盘之前就拒绝。',
+
+       foot:'本页随应用发布；运行中的版本以菜单栏「关于」为准。' },
+  en:{ sub:'AI agent token meter in your menu bar · all data stays local',
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+       nav_home:'Home', nav_sources:'Sources', nav_settings:'Settings', nav_about:'About',
+       what_h:'What is this',
+       what_p1:'Reads the session transcripts your local AI coding assistants (Codex, Claude Code, …) already write, and turns token usage into something you can see: a live burn rate, today\u2019s total and hit rate in the menu-bar HUD, plus a web dashboard.',
+       
+       
+         
+       
+       
+       
+       
+         
+       
+          
+         
+          
+           
+       
+       how_h:'How it works',
+       how_p1:'The app ships its own local server (double-click to run, no dependencies): it scans each agent\u2019s transcript directory, parses every call into a local SQLite database, and serves the data and the web UI on a local port.',
+       feat_h:'Features',
+       f1t:'Live HUD', f1d:'An odometer burn rate, heat colouring, per-agent ranking; frosted glass that follows the system theme.',
+       f2t:'Web dashboard', f2d:'Charts by day / source / project / model, an activity calendar, a paged call-log table.',
+       f3t:'Multi-source', f3d:'Codex, Claude Code and more, auto-detected with no setup.',
+       f4t:'Double-click to run', f4d:'The server ships inside the app: auto-started, self-healing, no dev tools required.',
+       priv_h:'Privacy',
+       dev_h:'Developer', dev_p:'XenoStudio Shanghai · contact:',
+       priv_p1:'Parsing, storage and aggregation all happen on this machine. Token usage never leaves it.',
+       priv_p2:'One anonymous count-only ping every 6 hours by default (random id, version, OS and chip, UI preferences, uptime; never usage numbers, file names, projects or session content). One menu item turns it off, and the server does not log the ping\u2019s IP. The leaderboard is a separate switch, off by default: joining uploads your daily total and display name.',
+       priv_p3:'System privacy stores are never read: contacts, messages, mail, Safari, Health, Calendar, Reminders, iCloud Drive. The recursive scan, the search-by-name and the manual path box all refuse before touching the disk.',
+
+       foot:'This page ships with the app; the running version is the one shown in the menu-bar About item.' }
+};
+let PREFS = {lang:'sys', theme:'auto'};
+const sysLang = () => (navigator.language||'zh').toLowerCase().startsWith('zh') ? 'zh' : 'en';
+const sysTheme = () => matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+const resolvedLang = () => PREFS.lang === 'sys' ? sysLang() : PREFS.lang;
+const resolvedTheme = () => PREFS.theme === 'auto' ? sysTheme() : PREFS.theme;
+function t(k){ const L = resolvedLang(); return (I18N[L]||I18N.zh)[k] || I18N.zh[k] || k; }
+
+function apply(){
+  document.documentElement.lang = resolvedLang() === 'en' ? 'en' : 'zh-CN';
+  document.documentElement.dataset.theme = resolvedTheme();
+  document.title = resolvedLang()==='en' ? 'TokenDance · About' : 'TokenDance · 介绍';
+  document.querySelectorAll('[data-i18n]').forEach(el => el.textContent = t(el.dataset.i18n));
+}
+async function loadPrefs(){
+  try{
+    const r = await fetch('/api/settings', {cache:'no-store'});
+    PREFS = await r.json();
+    if (!PREFS.lang) PREFS.lang = 'sys';
+    if (!PREFS.theme) PREFS.theme = 'auto';
+  }catch(e){}
+  apply();
+}
+// follow preference changes made elsewhere (settings page, native app)
+setInterval(async () => {
+  try{
+    const r = await fetch('/api/settings', {cache:'no-store'});
+    const p = await r.json();
+    if (p.lang !== PREFS.lang || p.theme !== PREFS.theme) { PREFS = p; apply(); }
+  }catch(e){}
+}, 5000);
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', apply);
+loadPrefs();
+</script>
+</body>
+</html>

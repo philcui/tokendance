@@ -1,0 +1,20 @@
+[package]
+name = "tokendance-server"
+version = "1.1.0"
+edition = "2021"
+
+[dependencies]
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "time", "signal"] }
+axum = { version = "0.8", features = ["http1"] }
+tokio-stream = { version = "0.1", features = ["sync"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+chrono = "0.4"
+glob = "0.3"
+rusqlite = { version = "0.32", features = ["bundled"] }
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+strip = true
