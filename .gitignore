@@ -12,3 +12,9 @@ DerivedData/
 
 # --- 系统垃圾 ---
 .DS_Store
+
+# --- 本机 cargo 覆盖（离线构建用 vendored crates）---
+# 它会 replace-with 到 /tmp/vendor-test，那台机器上没有；一旦入库，克隆下来
+# 就直接构建失败（找不到 vendored 源）。文件留在本机，永远不提交。
+**/.cargo/config.toml
+.cargo/
