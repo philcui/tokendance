@@ -39,7 +39,7 @@ cat > "$APP/Contents/Info.plist" <<PLIST
     <key>CFBundleName</key><string>TokenDance</string>
     <key>CFBundleDisplayName</key><string>TokenDance</string>
     <key>CFBundlePackageType</key><string>APPL</string>
-    <key>CFBundleShortVersionString</key><string>1.3.1</string>
+    <key>CFBundleShortVersionString</key><string>1.4.0</string>
     <key>CFBundleIconFile</key><string>AppIcon</string>
     <!-- No LSUIElement: the app is a regular app so it has a Dock icon and a
          menu bar. It used to be an accessory (menu-bar item only), which is why
