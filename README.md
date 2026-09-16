@@ -89,11 +89,19 @@ Requirements: macOS 13+, Xcode command line tools (`swiftc`), Rust (`cargo`).
 
 ```bash
 ./scripts/build_app.sh          # → build/TokenDance.app  (compiles Swift + the Rust server, bundles both)
+./scripts/package.sh            # → build/TokenDance-<version>-mac.zip   (what a release ships)
 cd rust-server && cargo test    # 44 parser/store/API tests
 ```
 
 The app carries the local server inside its bundle, so a built `.app` is self-contained:
 no cargo, no node, no runtime to install on the target machine.
+
+`package.sh` is not just a zip command: the archive's name and its internal layout are part of the
+update protocol. The in-app updater downloads `TokenDance-<version>-mac.zip`, unpacks it and
+expects `TokenDance.app` at the archive root, so the script builds the archive with `ditto`, unpacks
+it again to prove the layout, and verifies the signature and the binary checksum before printing
+the `sha256` that a release page wants. `--dmg` additionally produces a drag-to-Applications disk
+image for humans; the updater only ever uses the zip.
 
 ## Network behaviour
 

@@ -32,6 +32,14 @@ jobs:
       - name: Build TokenDance.app
         run: ./scripts/build_app.sh
 
+      # Packaging is part of the update protocol, not a file copy: the archive
+      # has to be named TokenDance-<version>-mac.zip and hold TokenDance.app at
+      # its root, because that is what the in-app updater downloads and unpacks.
+      # A green build with a broken archive is a release that fails on someone
+      # else's machine, so it is checked here.
+      - name: Package the release archive
+        run: ./scripts/package.sh --no-build
+
       # Fails on this machine's home path, on server/credential shapes, and on
       # any page that references an outside script or stylesheet. Two of those
       # were real bugs (a CDN and a committed .cargo override), so it is a gate,

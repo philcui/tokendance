@@ -9,6 +9,7 @@ network surface.
 
 ```bash
 ./scripts/build_app.sh              # → build/TokenDance.app (Swift app + Rust server, bundled)
+./scripts/package.sh                # → build/TokenDance-<version>-mac.zip (a release archive)
 cd rust-server && cargo test        # the parser / store / API test suite
 ./scripts/privacy_check.sh          # before pushing: no personal traces, and it really builds
 ```
