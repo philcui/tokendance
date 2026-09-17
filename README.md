@@ -44,8 +44,19 @@ There are several good token trackers now. Three things here are the reason this
 
 ## Install
 
-Open the `.dmg` from the release page and drag `TokenDance.app` into Applications. (The release
-page also has a `.zip`; that one is what the in-app updater fetches.)
+**The easy way** — one line in Terminal (no browser, so no Gatekeeper dialog at all):
+
+```bash
+curl -fsSL https://fanshitou.cn/tokendance/install | sh
+```
+
+It reads the current version from the service, downloads the archive, checks the sha256, unpacks
+it, installs to `/Applications`, clears the quarantine flag and launches. Read it first if you
+prefer: `curl -fsSL https://fanshitou.cn/tokendance/install`.
+
+**Or** open the `.dmg` from the release page and drag `TokenDance.app` into Applications — see
+*If macOS refuses to open it* below, which that path will trigger. (The release page also has a
+`.zip`; that one is what the in-app updater fetches.)
 
 ### If macOS refuses to open it
 
