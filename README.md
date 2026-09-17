@@ -9,6 +9,7 @@ is live: today's total, the current burn rate, the cache hit rate, and which age
 Everything is parsed and stored locally. No account, no login, no keys.
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![CI](https://github.com/philcui/tokendance/actions/workflows/ci.yml/badge.svg)](https://github.com/philcui/tokendance/actions/workflows/ci.yml)
 ![Platform: macOS 13+](https://img.shields.io/badge/platform-macOS%2013%2B-lightgrey.svg)
 ![Local only](https://img.shields.io/badge/network-local--only-success.svg)
 ![Rust + Swift](https://img.shields.io/badge/built%20with-Rust%20%2B%20Swift-orange.svg)

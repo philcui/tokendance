@@ -9,6 +9,7 @@
 解析和存储全部在本机完成。没有账号、不用登录、不用配 key。
 
 [![许可证: MIT](https://img.shields.io/badge/%E8%AE%B8%E5%8F%AF%E8%AF%81-MIT-blue.svg)](LICENSE)
+[![CI](https://github.com/philcui/tokendance/actions/workflows/ci.yml/badge.svg)](https://github.com/philcui/tokendance/actions/workflows/ci.yml)
 ![平台: macOS 13+](https://img.shields.io/badge/%E5%B9%B3%E5%8F%B0-macOS_13%2B-lightgrey.svg)
 ![只走本地](https://img.shields.io/badge/%E7%BD%91%E7%BB%9C-%E5%8F%AA%E8%B5%B0%E6%9C%AC%E5%9C%B0-success.svg)
 ![技术栈: Rust + Swift](https://img.shields.io/badge/%E6%8A%80%E6%9C%AF%E6%A0%88-Rust_%2B_Swift-orange.svg)
