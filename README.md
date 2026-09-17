@@ -1,5 +1,7 @@
 # TokenDance
 
+*English · [中文](README.zh-CN.md)*
+
 **A macOS menu-bar HUD for the token your AI coding agents burn** — Codex, Claude Code, and
 whatever else you have installed. It watches the transcripts already on your disk, so the number
 is live: today's total, the current burn rate, the cache hit rate, and which agent is doing it.
@@ -12,10 +14,6 @@ Everything is parsed and stored locally. No account, no login, no keys.
 ![Rust + Swift](https://img.shields.io/badge/built%20with-Rust%20%2B%20Swift-orange.svg)
 
 ![TokenDance's menu-bar HUD, with the today total ticking and the burn bar moving](docs/hud.gif)
-
-> 中文一句话：macOS 菜单栏上的 AI 编码 agent 用量仪表——把 Codex、Claude Code 等工具烧掉的
-> token 变成一个随时能看一眼的数字。**用量数据全部在本机解析和保存**。
-> 官方上报/更新/排行榜服务是另一个独立的私有服务，客户端只用 HTTP 跟它说话（见「网络行为」）。
 
 ## What it does
 
@@ -160,15 +158,16 @@ address of a ping — that log keeps only time, method, path and status.
 You can point the client at your own implementation of those four endpoints:
 
 ```bash
-# 运行时改（用户级，立即生效）
+# runtime override, per user, takes effect immediately
 defaults write com.tokendance.app tb_tel_url "https://example.com/my-endpoint"
 
-# 或者构建时改（打包进 app 的默认值，源码不用动）
+# or bake it in at build time — this sets the app's default, no source edit
 SERVICE_BASE="https://example.com/my-endpoint" ./scripts/build_app.sh
 ```
 
-`SERVICE_BASE` 是客户端里**唯一**的远端地址出处——匿名上报、更新检查、排行榜都挂在它下面，
-名单地址（`<base>/registry.json`）由 app 拉起本地服务时注入。
+`SERVICE_BASE` is the client's **only** source of a remote address: the anonymous ping, the update
+check and the leaderboard all hang off it. The registry URL (`<base>/registry.json`) is injected by
+the app when it starts the local service.
 
 The local service can be given a different registry with `TOKENDANCE_REGISTRY_URL`.
 
