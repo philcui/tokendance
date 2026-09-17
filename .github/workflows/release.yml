@@ -1,0 +1,68 @@
+name: Release
+
+# 打 tag（v1.4.0）就发一版：在 macOS 上构建、打包，然后把 zip 与 dmg 挂到 GitHub Release 上。
+#
+# 这和自家那个更新服务是**两条并行的路**：app 内更新读的是 fanshitou.cn 的 /api/version，
+# 而这里给出的是"GitHub 上也能下载到同一个构建"——Release 页面、RSS、以及别人在 README 之外
+# 找到你的那条路。两边版本号同源（都来自 Info.plist），所以不会打架。
+#
+# 注意行动顺序：先 build 再 package（package.sh 默认会 build，这里显式跑一次更清楚），
+# 打包脚本自己会校验 sha256 与签名，坏包不会挂上去。
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            rust-server/target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('rust-server/Cargo.lock') }}
+
+      - name: Test
+        working-directory: rust-server
+        run: cargo test --release
+
+      - name: Build and package
+        run: ./scripts/package.sh --dmg
+
+      - name: Read the version out of the app it just built
+        id: app
+        run: |
+          echo "version=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' \
+                build/TokenDance.app/Contents/Info.plist)" >> "$GITHUB_OUTPUT"
+
+      - name: Publish the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            build/TokenDance-*-mac.zip build/TokenDance-*.dmg \
+            --title "TokenDance ${{ steps.app.outputs.version }}" \
+            --generate-notes
+
+      # 想让这一版同时进自家更新服务（app 内自动更新的那个源）也可以，加一个 secret
+      # TOKENDANCE_ADMIN_TOKEN，然后在这里 POST 到 <ADMIN_PATH>/release：
+      #
+      #   - name: Also publish to the update service
+      #     env:
+      #       KEY: ${{ secrets.TOKENDANCE_ADMIN_TOKEN }}
+      #     run: |
+      #       V="${{ steps.app.outputs.version }}"
+      #       curl -fsS -X POST "https://fanshitou.cn/tokendance/console/release?key=$KEY&version=$V" \
+      #         --data-binary "build/TokenDance-$V-mac.zip"
+      #       curl -fsS -X POST ".../console/release?key=$KEY&version=$V&kind=dmg" \
+      #         --data-binary "build/TokenDance-$V.dmg"
+      #
+      # 没开是因为它把发布权交给了 GitHub 上的这个仓库；等你决定要不要这么做时再打开。
